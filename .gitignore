@@ -1,0 +1,33 @@
+# Build and distribution
+/dist/
+/.cache/
+
+# Dependencies and build caches
+node_modules/
+.next/
+.playwright-cli/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.venv311/
+
+# Runtime logs and process states
+*.log
+*.pid
+*.port
+
+# User data and project workspaces (treat artifacts/arranger as user data)
+artifacts/arranger/*
+!artifacts/arranger/.gitkeep
+
+# System and IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

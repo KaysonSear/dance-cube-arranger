@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Claude/Anthropic 设计语言 token(DOM 侧;Canvas 侧见 src/lib/theme.ts)。
+   全暖调,无冷灰、无 DOM 装饰渐变、无重投影;交互件用 ring 阴影代替可见边框。
+   谱面 Note 的实机材质渐变仅存在于 Canvas。 */
+@theme {
+  /* 面 */
+  --color-parchment: #f5f4ed;
+  --color-ivory: #faf9f5;
+  --color-sand: #e8e6dc;
+  --color-sand-deep: #dfdcd0;
+  /* 字 */
+  --color-ink: #141413;
+  --color-charcoal: #4d4c48;
+  --color-olive: #5e5d59;
+  --color-stone: #87867f;
+  /* 线 */
+  --color-cream: #f0eee6;
+  --color-hairline: #d1cfc5;
+  /* 强调 */
+  --color-clay: #c96442;
+  --color-coral: #d97757;
+  --color-err: #b53333;
+  --color-focus: #3898ec;
+  /* 功能底色(暖调) */
+  --color-warn-wash: #f8f1de;
+  --color-warn-ink: #8a6116;
+  --color-err-wash: #f7e9e6;
+  --color-ok-wash: #eef2e6;
+  --color-ok-ink: #3f6212;
+  /* 阴影:ring 代边框,whisper 给对话框 */
+  --shadow-ring: 0 0 0 1px #d1cfc5;
+  --shadow-ring-focus: 0 0 0 1px #3898ec, 0 0 0 3px rgba(56, 152, 236, 0.18);
+  --shadow-whisper: 0 4px 24px rgba(0, 0, 0, 0.05);
+  /* 字体:serif 仅标题(字重 500),sans 是 UI,mono 仅数字读数 */
+  --font-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-serif: Georgia, "Times New Roman", "Songti SC", SimSun, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, "Microsoft YaHei", monospace;
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: #f5f4ed;
+  color: #141413;
+  line-height: 1.6;
+}
+
+/* 彻底隐藏 Next.js 页面悬浮球与开发指示器 */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dev-indicator],
+#__next-build-watcher,
+div[data-nextjs-dialog-overlay] {
+  display: none !important;
+}
+

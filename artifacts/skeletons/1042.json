@@ -1,0 +1,7391 @@
+{
+  "bpm": 93.75000000000017,
+  "offset_ms": 200.0,
+  "beat_grid": [
+    0.2,
+    0.84,
+    1.46,
+    2.1,
+    2.72,
+    3.36,
+    4.0,
+    4.62,
+    5.26,
+    5.88,
+    6.52,
+    7.14,
+    7.78,
+    8.42,
+    9.04,
+    9.68,
+    10.3,
+    10.94,
+    11.56,
+    12.2,
+    12.82,
+    13.46,
+    14.1,
+    14.74,
+    15.36,
+    15.98,
+    16.62,
+    17.26,
+    17.88,
+    18.52,
+    19.14,
+    19.78,
+    20.4,
+    21.04,
+    21.68,
+    22.3,
+    22.94,
+    23.56,
+    24.2,
+    24.84,
+    25.46,
+    26.08,
+    26.72,
+    27.36,
+    27.98,
+    28.62,
+    29.24,
+    29.88,
+    30.5,
+    31.14,
+    31.78,
+    32.42,
+    33.04,
+    33.68,
+    34.3,
+    34.94,
+    35.58,
+    36.2,
+    36.84,
+    37.46,
+    38.1,
+    38.74,
+    39.36,
+    39.98,
+    40.6,
+    41.24,
+    41.88,
+    42.52,
+    43.16,
+    43.8,
+    44.42,
+    45.06,
+    45.68,
+    46.32,
+    46.94,
+    47.58,
+    48.2,
+    48.84,
+    49.46,
+    50.1,
+    50.72,
+    51.36,
+    52.0,
+    52.64,
+    52.94,
+    53.26,
+    53.58,
+    53.9,
+    54.2,
+    54.52,
+    55.16,
+    55.78,
+    56.1,
+    56.42,
+    56.72,
+    57.04,
+    57.36,
+    57.68,
+    58.0,
+    58.3,
+    58.64,
+    58.94,
+    59.24,
+    59.56,
+    60.2,
+    60.84,
+    61.46,
+    62.1,
+    62.72,
+    63.36,
+    63.98,
+    64.62,
+    65.24,
+    65.88,
+    66.52,
+    67.14,
+    67.78,
+    68.4,
+    69.04,
+    69.66,
+    70.3,
+    70.94,
+    71.56,
+    72.2,
+    72.82,
+    73.46,
+    74.1,
+    74.72,
+    75.34,
+    75.98,
+    76.62,
+    77.24,
+    77.88,
+    78.5,
+    79.14,
+    79.78,
+    80.42,
+    81.04,
+    81.68,
+    82.3,
+    82.94,
+    83.56,
+    84.2,
+    84.82,
+    85.48,
+    86.1,
+    86.74,
+    87.36,
+    88.0,
+    88.62,
+    89.26,
+    89.88,
+    90.52,
+    91.16,
+    91.78,
+    92.42,
+    93.04,
+    93.68,
+    94.3,
+    94.94,
+    95.58,
+    96.2,
+    96.84,
+    97.46,
+    98.1,
+    98.74,
+    99.36,
+    99.98,
+    100.62,
+    101.26,
+    101.88,
+    102.5,
+    103.14,
+    103.78,
+    104.4,
+    105.04,
+    105.66,
+    106.3,
+    106.94,
+    107.58,
+    108.2,
+    108.84,
+    109.46,
+    110.1,
+    110.72,
+    111.36,
+    111.98,
+    112.62,
+    113.24,
+    113.58,
+    113.88,
+    114.52,
+    115.14,
+    115.76,
+    117.04,
+    118.3,
+    119.52
+  ],
+  "downbeats": [
+    0.2,
+    2.72,
+    5.26,
+    7.78,
+    10.3,
+    12.82,
+    15.36,
+    17.88,
+    20.4,
+    22.94,
+    25.46,
+    27.98,
+    29.88,
+    30.5,
+    31.78,
+    33.04,
+    34.3,
+    35.58,
+    36.84,
+    39.36,
+    41.88,
+    44.42,
+    46.94,
+    49.46,
+    52.0,
+    54.52,
+    57.04,
+    57.36,
+    58.64,
+    59.24,
+    59.56,
+    62.1,
+    64.62,
+    67.14,
+    69.66,
+    72.2,
+    74.72,
+    77.24,
+    79.78,
+    82.3,
+    84.82,
+    87.36,
+    89.88,
+    92.42,
+    94.94,
+    97.46,
+    99.98,
+    102.5,
+    105.04,
+    106.3,
+    107.58,
+    108.84,
+    110.1,
+    111.36,
+    112.62,
+    113.88,
+    115.14
+  ],
+  "sections": [
+    {
+      "start": 0.0,
+      "end": 0.17,
+      "label": "verse"
+    },
+    {
+      "start": 0.17,
+      "end": 30.5,
+      "label": "verse"
+    },
+    {
+      "start": 30.5,
+      "end": 69.66,
+      "label": "solo"
+    },
+    {
+      "start": 69.66,
+      "end": 92.39,
+      "label": "chorus"
+    },
+    {
+      "start": 92.39,
+      "end": 115.13,
+      "label": "solo"
+    },
+    {
+      "start": 115.13,
+      "end": 122.62666666666667,
+      "label": "outro"
+    }
+  ],
+  "drum_hits": [
+    {
+      "time": 1.13,
+      "type": "snare",
+      "velocity": 0.3841522233483157
+    },
+    {
+      "time": 1.44,
+      "type": "snare",
+      "velocity": 0.39768265414339776
+    },
+    {
+      "time": 3.02,
+      "type": "snare",
+      "velocity": 0.33058629120296623
+    },
+    {
+      "time": 3.97,
+      "type": "snare",
+      "velocity": 0.4848941547817771
+    },
+    {
+      "time": 3.97,
+      "type": "hihat",
+      "velocity": 0.2939829877084911
+    },
+    {
+      "time": 4.3,
+      "type": "hihat",
+      "velocity": 0.437836674272591
+    },
+    {
+      "time": 4.92,
+      "type": "hihat",
+      "velocity": 0.459237585626425
+    },
+    {
+      "time": 5.23,
+      "type": "kick",
+      "velocity": 0.8122504215203736
+    },
+    {
+      "time": 5.23,
+      "type": "snare",
+      "velocity": 0.8281788542723725
+    },
+    {
+      "time": 5.23,
+      "type": "hihat",
+      "velocity": 0.48251179161684493
+    },
+    {
+      "time": 5.55,
+      "type": "kick",
+      "velocity": 0.9192666750719788
+    },
+    {
+      "time": 5.55,
+      "type": "snare",
+      "velocity": 0.4213786874672078
+    },
+    {
+      "time": 5.55,
+      "type": "hihat",
+      "velocity": 0.8001551730054287
+    },
+    {
+      "time": 5.71,
+      "type": "kick",
+      "velocity": 0.818360083960926
+    },
+    {
+      "time": 5.71,
+      "type": "hihat",
+      "velocity": 0.7767320107525095
+    },
+    {
+      "time": 5.87,
+      "type": "kick",
+      "velocity": 0.9009463472467099
+    },
+    {
+      "time": 5.87,
+      "type": "snare",
+      "velocity": 0.35192526130838137
+    },
+    {
+      "time": 5.87,
+      "type": "hihat",
+      "velocity": 0.7993138447705139
+    },
+    {
+      "time": 6.02,
+      "type": "kick",
+      "velocity": 0.7511249752089604
+    },
+    {
+      "time": 6.02,
+      "type": "hihat",
+      "velocity": 0.6820585768402028
+    },
+    {
+      "time": 6.18,
+      "type": "kick",
+      "velocity": 0.9445343746787019
+    },
+    {
+      "time": 6.18,
+      "type": "snare",
+      "velocity": 0.3549728224290779
+    },
+    {
+      "time": 6.18,
+      "type": "hihat",
+      "velocity": 0.8754049687802536
+    },
+    {
+      "time": 6.34,
+      "type": "kick",
+      "velocity": 0.931910186029893
+    },
+    {
+      "time": 6.34,
+      "type": "hihat",
+      "velocity": 0.90958089911551
+    },
+    {
+      "time": 6.5,
+      "type": "kick",
+      "velocity": 0.9901319868807337
+    },
+    {
+      "time": 6.5,
+      "type": "hihat",
+      "velocity": 0.9498951845509931
+    },
+    {
+      "time": 6.65,
+      "type": "kick",
+      "velocity": 0.7805644195122752
+    },
+    {
+      "time": 6.65,
+      "type": "hihat",
+      "velocity": 0.7634890558505851
+    },
+    {
+      "time": 6.81,
+      "type": "kick",
+      "velocity": 0.9513126924112633
+    },
+    {
+      "time": 6.81,
+      "type": "hihat",
+      "velocity": 0.8618923416512535
+    },
+    {
+      "time": 6.97,
+      "type": "kick",
+      "velocity": 0.9132767592493922
+    },
+    {
+      "time": 6.97,
+      "type": "hihat",
+      "velocity": 0.8655721752545068
+    },
+    {
+      "time": 7.13,
+      "type": "kick",
+      "velocity": 0.9994611725307074
+    },
+    {
+      "time": 7.13,
+      "type": "hihat",
+      "velocity": 0.9306148158425616
+    },
+    {
+      "time": 7.29,
+      "type": "kick",
+      "velocity": 0.8714928151059873
+    },
+    {
+      "time": 7.29,
+      "type": "hihat",
+      "velocity": 0.8512374775765895
+    },
+    {
+      "time": 7.44,
+      "type": "kick",
+      "velocity": 0.912852250057046
+    },
+    {
+      "time": 7.44,
+      "type": "snare",
+      "velocity": 0.8826315770086751
+    },
+    {
+      "time": 7.44,
+      "type": "hihat",
+      "velocity": 0.7731686926118534
+    },
+    {
+      "time": 7.6,
+      "type": "kick",
+      "velocity": 0.9570130320897025
+    },
+    {
+      "time": 7.6,
+      "type": "hihat",
+      "velocity": 0.8695170928442122
+    },
+    {
+      "time": 7.76,
+      "type": "kick",
+      "velocity": 0.9156362135227599
+    },
+    {
+      "time": 7.76,
+      "type": "hihat",
+      "velocity": 0.8296865113674308
+    },
+    {
+      "time": 7.84,
+      "type": "kick",
+      "velocity": 0.8519278462326764
+    },
+    {
+      "time": 7.84,
+      "type": "hihat",
+      "velocity": 0.7739554143210363
+    },
+    {
+      "time": 7.92,
+      "type": "kick",
+      "velocity": 0.8062239936421202
+    },
+    {
+      "time": 7.92,
+      "type": "hihat",
+      "velocity": 0.765325838431504
+    },
+    {
+      "time": 8.0,
+      "type": "kick",
+      "velocity": 0.7640875304479848
+    },
+    {
+      "time": 8.0,
+      "type": "hihat",
+      "velocity": 0.7022920717593079
+    },
+    {
+      "time": 8.08,
+      "type": "kick",
+      "velocity": 0.931039712773552
+    },
+    {
+      "time": 8.08,
+      "type": "hihat",
+      "velocity": 0.7612961999480301
+    },
+    {
+      "time": 8.16,
+      "type": "kick",
+      "velocity": 0.7262554831898819
+    },
+    {
+      "time": 8.16,
+      "type": "hihat",
+      "velocity": 0.6841349172801607
+    },
+    {
+      "time": 8.23,
+      "type": "kick",
+      "velocity": 0.9228504141145655
+    },
+    {
+      "time": 8.23,
+      "type": "hihat",
+      "velocity": 0.8430733819294792
+    },
+    {
+      "time": 8.31,
+      "type": "kick",
+      "velocity": 0.8846417433866811
+    },
+    {
+      "time": 8.31,
+      "type": "hihat",
+      "velocity": 0.7014616648295394
+    },
+    {
+      "time": 8.39,
+      "type": "kick",
+      "velocity": 0.9315464225584792
+    },
+    {
+      "time": 8.39,
+      "type": "hihat",
+      "velocity": 0.7644435391465135
+    },
+    {
+      "time": 8.47,
+      "type": "kick",
+      "velocity": 0.9012416748474135
+    },
+    {
+      "time": 8.47,
+      "type": "hihat",
+      "velocity": 0.7004586495799724
+    },
+    {
+      "time": 8.55,
+      "type": "kick",
+      "velocity": 0.9624217923076659
+    },
+    {
+      "time": 8.55,
+      "type": "hihat",
+      "velocity": 0.8595970581235091
+    },
+    {
+      "time": 8.63,
+      "type": "kick",
+      "velocity": 0.8962631106552453
+    },
+    {
+      "time": 8.63,
+      "type": "hihat",
+      "velocity": 0.6699369620974489
+    },
+    {
+      "time": 8.71,
+      "type": "kick",
+      "velocity": 0.9101548815552145
+    },
+    {
+      "time": 8.71,
+      "type": "hihat",
+      "velocity": 0.749788763217768
+    },
+    {
+      "time": 8.79,
+      "type": "kick",
+      "velocity": 0.9195992902056378
+    },
+    {
+      "time": 8.79,
+      "type": "hihat",
+      "velocity": 0.739873058245259
+    },
+    {
+      "time": 8.87,
+      "type": "kick",
+      "velocity": 0.9116061226775343
+    },
+    {
+      "time": 8.87,
+      "type": "hihat",
+      "velocity": 0.7647417747870491
+    },
+    {
+      "time": 8.94,
+      "type": "kick",
+      "velocity": 0.8935170809535604
+    },
+    {
+      "time": 8.95,
+      "type": "hihat",
+      "velocity": 0.7135235678210787
+    },
+    {
+      "time": 9.02,
+      "type": "kick",
+      "velocity": 0.8068331310522366
+    },
+    {
+      "time": 9.18,
+      "type": "snare",
+      "velocity": 0.47725370017372626
+    },
+    {
+      "time": 9.97,
+      "type": "snare",
+      "velocity": 0.5282153210918642
+    },
+    {
+      "time": 9.97,
+      "type": "hihat",
+      "velocity": 0.6291449826522499
+    },
+    {
+      "time": 10.29,
+      "type": "kick",
+      "velocity": 0.9138947500252191
+    },
+    {
+      "time": 10.29,
+      "type": "snare",
+      "velocity": 0.8166555202576963
+    },
+    {
+      "time": 10.29,
+      "type": "hihat",
+      "velocity": 0.6957882083637681
+    },
+    {
+      "time": 10.45,
+      "type": "hihat",
+      "velocity": 0.5452776308858646
+    },
+    {
+      "time": 10.61,
+      "type": "kick",
+      "velocity": 0.7799671081308083
+    },
+    {
+      "time": 10.61,
+      "type": "snare",
+      "velocity": 0.8156395157635469
+    },
+    {
+      "time": 10.76,
+      "type": "snare",
+      "velocity": 0.4665353438960664
+    },
+    {
+      "time": 10.76,
+      "type": "hihat",
+      "velocity": 0.7490340299467356
+    },
+    {
+      "time": 10.92,
+      "type": "kick",
+      "velocity": 0.9450360438612538
+    },
+    {
+      "time": 10.92,
+      "type": "snare",
+      "velocity": 0.9194012850046408
+    },
+    {
+      "time": 10.92,
+      "type": "hihat",
+      "velocity": 0.7039942444075648
+    },
+    {
+      "time": 11.0,
+      "type": "kick",
+      "velocity": 0.8513838489147938
+    },
+    {
+      "time": 11.08,
+      "type": "hihat",
+      "velocity": 0.7518395129072055
+    },
+    {
+      "time": 11.15,
+      "type": "snare",
+      "velocity": 0.5292006296100105
+    },
+    {
+      "time": 11.24,
+      "type": "kick",
+      "velocity": 0.9213182002387048
+    },
+    {
+      "time": 11.24,
+      "type": "snare",
+      "velocity": 0.7328896267698896
+    },
+    {
+      "time": 11.24,
+      "type": "hihat",
+      "velocity": 0.3863294727704398
+    },
+    {
+      "time": 11.39,
+      "type": "snare",
+      "velocity": 0.5748297132653338
+    },
+    {
+      "time": 11.39,
+      "type": "hihat",
+      "velocity": 0.7254011657103846
+    },
+    {
+      "time": 11.55,
+      "type": "kick",
+      "velocity": 0.8999290502904129
+    },
+    {
+      "time": 11.55,
+      "type": "snare",
+      "velocity": 0.45876554613860454
+    },
+    {
+      "time": 11.71,
+      "type": "hihat",
+      "velocity": 0.778233851767904
+    },
+    {
+      "time": 11.87,
+      "type": "kick",
+      "velocity": 0.9989581462629006
+    },
+    {
+      "time": 11.87,
+      "type": "snare",
+      "velocity": 0.4493370993957028
+    },
+    {
+      "time": 11.87,
+      "type": "hihat",
+      "velocity": 0.6860768416567787
+    },
+    {
+      "time": 12.02,
+      "type": "hihat",
+      "velocity": 0.7339517075395973
+    },
+    {
+      "time": 12.1,
+      "type": "hihat",
+      "velocity": 0.7024048390816772
+    },
+    {
+      "time": 12.18,
+      "type": "kick",
+      "velocity": 0.7885467303583396
+    },
+    {
+      "time": 12.18,
+      "type": "snare",
+      "velocity": 0.4288554517442778
+    },
+    {
+      "time": 12.18,
+      "type": "hihat",
+      "velocity": 0.5680489398546923
+    },
+    {
+      "time": 12.26,
+      "type": "kick",
+      "velocity": 0.6707634916407749
+    },
+    {
+      "time": 12.26,
+      "type": "hihat",
+      "velocity": 0.7177512761286571
+    },
+    {
+      "time": 12.34,
+      "type": "hihat",
+      "velocity": 0.841927808105043
+    },
+    {
+      "time": 12.42,
+      "type": "hihat",
+      "velocity": 0.5732032788989204
+    },
+    {
+      "time": 12.5,
+      "type": "kick",
+      "velocity": 0.9699939402912214
+    },
+    {
+      "time": 12.5,
+      "type": "hihat",
+      "velocity": 0.7489032327774087
+    },
+    {
+      "time": 12.66,
+      "type": "hihat",
+      "velocity": 0.7992208521190013
+    },
+    {
+      "time": 12.81,
+      "type": "hihat",
+      "velocity": 0.6378593440586581
+    },
+    {
+      "time": 12.82,
+      "type": "kick",
+      "velocity": 0.8502996670423638
+    },
+    {
+      "time": 12.97,
+      "type": "hihat",
+      "velocity": 0.7953836612492899
+    },
+    {
+      "time": 13.05,
+      "type": "hihat",
+      "velocity": 0.5370605442907067
+    },
+    {
+      "time": 13.13,
+      "type": "kick",
+      "velocity": 0.9383924006844621
+    },
+    {
+      "time": 13.13,
+      "type": "hihat",
+      "velocity": 0.618504271038101
+    },
+    {
+      "time": 13.28,
+      "type": "hihat",
+      "velocity": 0.7056401949524054
+    },
+    {
+      "time": 13.45,
+      "type": "kick",
+      "velocity": 0.8584204652075329
+    },
+    {
+      "time": 13.45,
+      "type": "snare",
+      "velocity": 0.7454435054778746
+    },
+    {
+      "time": 13.45,
+      "type": "hihat",
+      "velocity": 0.4742516983437291
+    },
+    {
+      "time": 13.52,
+      "type": "kick",
+      "velocity": 0.6515041900653475
+    },
+    {
+      "time": 13.52,
+      "type": "hihat",
+      "velocity": 0.44795978710822
+    },
+    {
+      "time": 13.6,
+      "type": "hihat",
+      "velocity": 0.8025329156181836
+    },
+    {
+      "time": 13.76,
+      "type": "kick",
+      "velocity": 0.9291032167379535
+    },
+    {
+      "time": 13.76,
+      "type": "hihat",
+      "velocity": 0.7710920936794659
+    },
+    {
+      "time": 13.92,
+      "type": "hihat",
+      "velocity": 0.7138678797371726
+    },
+    {
+      "time": 14.08,
+      "type": "kick",
+      "velocity": 0.953340048535831
+    },
+    {
+      "time": 14.08,
+      "type": "hihat",
+      "velocity": 0.7891366747055658
+    },
+    {
+      "time": 14.16,
+      "type": "kick",
+      "velocity": 0.5955493678212209
+    },
+    {
+      "time": 14.23,
+      "type": "hihat",
+      "velocity": 0.7125590033203998
+    },
+    {
+      "time": 14.39,
+      "type": "kick",
+      "velocity": 0.9441555540232698
+    },
+    {
+      "time": 14.39,
+      "type": "hihat",
+      "velocity": 0.7885923542721464
+    },
+    {
+      "time": 14.55,
+      "type": "hihat",
+      "velocity": 0.7321596441489818
+    },
+    {
+      "time": 14.71,
+      "type": "kick",
+      "velocity": 0.9595332686542192
+    },
+    {
+      "time": 14.71,
+      "type": "hihat",
+      "velocity": 0.6340167248479273
+    },
+    {
+      "time": 14.87,
+      "type": "hihat",
+      "velocity": 0.6834797035944858
+    },
+    {
+      "time": 15.02,
+      "type": "kick",
+      "velocity": 0.8482668825767765
+    },
+    {
+      "time": 15.02,
+      "type": "hihat",
+      "velocity": 0.7308521894405713
+    },
+    {
+      "time": 15.18,
+      "type": "hihat",
+      "velocity": 0.6410426137048421
+    },
+    {
+      "time": 15.34,
+      "type": "kick",
+      "velocity": 0.9614350620811574
+    },
+    {
+      "time": 15.34,
+      "type": "snare",
+      "velocity": 0.721721267484024
+    },
+    {
+      "time": 15.34,
+      "type": "hihat",
+      "velocity": 0.5838505174469142
+    },
+    {
+      "time": 15.5,
+      "type": "hihat",
+      "velocity": 0.695950347740172
+    },
+    {
+      "time": 15.66,
+      "type": "kick",
+      "velocity": 0.9704418430484374
+    },
+    {
+      "time": 15.66,
+      "type": "snare",
+      "velocity": 0.5465128369602298
+    },
+    {
+      "time": 15.66,
+      "type": "hihat",
+      "velocity": 0.7549564146221154
+    },
+    {
+      "time": 15.81,
+      "type": "hihat",
+      "velocity": 0.7008363716425792
+    },
+    {
+      "time": 15.97,
+      "type": "kick",
+      "velocity": 0.8751783355426896
+    },
+    {
+      "time": 15.97,
+      "type": "snare",
+      "velocity": 0.8735545507236786
+    },
+    {
+      "time": 15.97,
+      "type": "hihat",
+      "velocity": 0.7241092205477441
+    },
+    {
+      "time": 16.05,
+      "type": "kick",
+      "velocity": 0.8031856736257783
+    },
+    {
+      "time": 16.13,
+      "type": "hihat",
+      "velocity": 0.796264668072133
+    },
+    {
+      "time": 16.29,
+      "type": "kick",
+      "velocity": 0.9812288613776832
+    },
+    {
+      "time": 16.29,
+      "type": "hihat",
+      "velocity": 0.7480716626317075
+    },
+    {
+      "time": 16.44,
+      "type": "snare",
+      "velocity": 0.37721144312381377
+    },
+    {
+      "time": 16.44,
+      "type": "hihat",
+      "velocity": 0.7713173052086676
+    },
+    {
+      "time": 16.6,
+      "type": "kick",
+      "velocity": 0.9046566829566441
+    },
+    {
+      "time": 16.6,
+      "type": "hihat",
+      "velocity": 0.4735999419942988
+    },
+    {
+      "time": 16.76,
+      "type": "hihat",
+      "velocity": 0.7951437156516067
+    },
+    {
+      "time": 16.84,
+      "type": "hihat",
+      "velocity": 0.5159636200339646
+    },
+    {
+      "time": 16.92,
+      "type": "kick",
+      "velocity": 0.98253689769406
+    },
+    {
+      "time": 16.92,
+      "type": "hihat",
+      "velocity": 0.8726924784712964
+    },
+    {
+      "time": 17.08,
+      "type": "hihat",
+      "velocity": 0.7985812772253112
+    },
+    {
+      "time": 17.24,
+      "type": "kick",
+      "velocity": 0.901536808578795
+    },
+    {
+      "time": 17.24,
+      "type": "hihat",
+      "velocity": 0.5645654312516443
+    },
+    {
+      "time": 17.31,
+      "type": "hihat",
+      "velocity": 0.6070382577196664
+    },
+    {
+      "time": 17.39,
+      "type": "hihat",
+      "velocity": 0.8019347641363208
+    },
+    {
+      "time": 17.55,
+      "type": "kick",
+      "velocity": 0.9131840250903092
+    },
+    {
+      "time": 17.55,
+      "type": "hihat",
+      "velocity": 0.6249759521261681
+    },
+    {
+      "time": 17.71,
+      "type": "hihat",
+      "velocity": 0.8313513318596248
+    },
+    {
+      "time": 17.87,
+      "type": "kick",
+      "velocity": 0.9419172680762301
+    },
+    {
+      "time": 17.87,
+      "type": "snare",
+      "velocity": 0.3557773801158964
+    },
+    {
+      "time": 17.87,
+      "type": "hihat",
+      "velocity": 0.7557240078915153
+    },
+    {
+      "time": 18.02,
+      "type": "snare",
+      "velocity": 0.33939202968320265
+    },
+    {
+      "time": 18.02,
+      "type": "hihat",
+      "velocity": 0.7607489068516714
+    },
+    {
+      "time": 18.03,
+      "type": "kick",
+      "velocity": 0.7732862420441684
+    },
+    {
+      "time": 18.1,
+      "type": "kick",
+      "velocity": 0.8607964629963886
+    },
+    {
+      "time": 18.18,
+      "type": "kick",
+      "velocity": 0.853359248061032
+    },
+    {
+      "time": 18.18,
+      "type": "snare",
+      "velocity": 0.8485918721837653
+    },
+    {
+      "time": 18.18,
+      "type": "hihat",
+      "velocity": 0.6261049824351163
+    },
+    {
+      "time": 18.34,
+      "type": "kick",
+      "velocity": 0.9727053966304606
+    },
+    {
+      "time": 18.34,
+      "type": "snare",
+      "velocity": 0.6897069800904607
+    },
+    {
+      "time": 18.34,
+      "type": "hihat",
+      "velocity": 0.8510401832297737
+    },
+    {
+      "time": 18.5,
+      "type": "kick",
+      "velocity": 0.9197138669750136
+    },
+    {
+      "time": 18.5,
+      "type": "snare",
+      "velocity": 0.7532702038813801
+    },
+    {
+      "time": 18.5,
+      "type": "hihat",
+      "velocity": 0.8001751415456076
+    },
+    {
+      "time": 18.58,
+      "type": "kick",
+      "velocity": 0.8677091321691824
+    },
+    {
+      "time": 18.58,
+      "type": "hihat",
+      "velocity": 0.590237736133642
+    },
+    {
+      "time": 18.66,
+      "type": "kick",
+      "velocity": 0.9736466321893772
+    },
+    {
+      "time": 18.66,
+      "type": "hihat",
+      "velocity": 0.9030553869789996
+    },
+    {
+      "time": 18.82,
+      "type": "kick",
+      "velocity": 0.9014885997406933
+    },
+    {
+      "time": 18.82,
+      "type": "snare",
+      "velocity": 0.5661938689343863
+    },
+    {
+      "time": 18.82,
+      "type": "hihat",
+      "velocity": 0.5809365969122692
+    },
+    {
+      "time": 18.97,
+      "type": "kick",
+      "velocity": 0.9419347809383287
+    },
+    {
+      "time": 18.97,
+      "type": "snare",
+      "velocity": 0.696692285635944
+    },
+    {
+      "time": 18.97,
+      "type": "hihat",
+      "velocity": 0.8277643616616694
+    },
+    {
+      "time": 19.13,
+      "type": "kick",
+      "velocity": 0.8062566929344519
+    },
+    {
+      "time": 19.13,
+      "type": "snare",
+      "velocity": 0.47451536062181904
+    },
+    {
+      "time": 19.13,
+      "type": "hihat",
+      "velocity": 0.8305367575911633
+    },
+    {
+      "time": 19.21,
+      "type": "kick",
+      "velocity": 0.7481451391047929
+    },
+    {
+      "time": 19.21,
+      "type": "snare",
+      "velocity": 0.7525319495027284
+    },
+    {
+      "time": 19.21,
+      "type": "hihat",
+      "velocity": 0.6674317827169506
+    },
+    {
+      "time": 19.29,
+      "type": "kick",
+      "velocity": 0.8497495305292806
+    },
+    {
+      "time": 19.29,
+      "type": "snare",
+      "velocity": 0.7649174203928942
+    },
+    {
+      "time": 19.29,
+      "type": "hihat",
+      "velocity": 0.7771574892914664
+    },
+    {
+      "time": 19.37,
+      "type": "kick",
+      "velocity": 0.8686112061250297
+    },
+    {
+      "time": 19.37,
+      "type": "snare",
+      "velocity": 0.767252576377889
+    },
+    {
+      "time": 19.37,
+      "type": "hihat",
+      "velocity": 0.6342821965730236
+    },
+    {
+      "time": 19.45,
+      "type": "kick",
+      "velocity": 0.8856522549167036
+    },
+    {
+      "time": 19.45,
+      "type": "snare",
+      "velocity": 0.8061901311338556
+    },
+    {
+      "time": 19.45,
+      "type": "hihat",
+      "velocity": 0.5672611841757914
+    },
+    {
+      "time": 19.6,
+      "type": "kick",
+      "velocity": 0.867417617331814
+    },
+    {
+      "time": 19.6,
+      "type": "snare",
+      "velocity": 0.5824698447578478
+    },
+    {
+      "time": 19.6,
+      "type": "hihat",
+      "velocity": 0.7211112253504042
+    },
+    {
+      "time": 19.68,
+      "type": "kick",
+      "velocity": 0.5632547453878649
+    },
+    {
+      "time": 19.68,
+      "type": "snare",
+      "velocity": 0.5247633485652151
+    },
+    {
+      "time": 19.76,
+      "type": "kick",
+      "velocity": 0.9239867468346471
+    },
+    {
+      "time": 19.76,
+      "type": "snare",
+      "velocity": 0.5970295600956448
+    },
+    {
+      "time": 19.76,
+      "type": "hihat",
+      "velocity": 0.49462694404886126
+    },
+    {
+      "time": 19.92,
+      "type": "hihat",
+      "velocity": 0.70809302961593
+    },
+    {
+      "time": 20.08,
+      "type": "snare",
+      "velocity": 0.9644374516497988
+    },
+    {
+      "time": 20.08,
+      "type": "hihat",
+      "velocity": 0.41409000874415264
+    },
+    {
+      "time": 20.23,
+      "type": "hihat",
+      "velocity": 0.485037779637918
+    },
+    {
+      "time": 20.39,
+      "type": "kick",
+      "velocity": 0.745394973524236
+    },
+    {
+      "time": 20.71,
+      "type": "hihat",
+      "velocity": 0.30172893953933155
+    },
+    {
+      "time": 21.03,
+      "type": "kick",
+      "velocity": 0.49769104868504577
+    },
+    {
+      "time": 21.03,
+      "type": "snare",
+      "velocity": 0.9472488036808805
+    },
+    {
+      "time": 21.03,
+      "type": "hihat",
+      "velocity": 0.5925247479036425
+    },
+    {
+      "time": 21.34,
+      "type": "kick",
+      "velocity": 0.6274175423690094
+    },
+    {
+      "time": 21.34,
+      "type": "hihat",
+      "velocity": 0.4099053071145323
+    },
+    {
+      "time": 21.65,
+      "type": "kick",
+      "velocity": 0.5089710120773479
+    },
+    {
+      "time": 21.66,
+      "type": "hihat",
+      "velocity": 0.4316880440982915
+    },
+    {
+      "time": 21.97,
+      "type": "kick",
+      "velocity": 0.7017918242851181
+    },
+    {
+      "time": 21.97,
+      "type": "snare",
+      "velocity": 0.7145362119136446
+    },
+    {
+      "time": 21.97,
+      "type": "hihat",
+      "velocity": 0.5376957571246491
+    },
+    {
+      "time": 22.29,
+      "type": "snare",
+      "velocity": 0.9572483894467622
+    },
+    {
+      "time": 22.29,
+      "type": "hihat",
+      "velocity": 0.7824528359559867
+    },
+    {
+      "time": 22.6,
+      "type": "kick",
+      "velocity": 0.5020962766685831
+    },
+    {
+      "time": 22.6,
+      "type": "snare",
+      "velocity": 0.3847641072404957
+    },
+    {
+      "time": 22.6,
+      "type": "hihat",
+      "velocity": 0.6064724824145984
+    },
+    {
+      "time": 22.92,
+      "type": "kick",
+      "velocity": 0.6441100787426101
+    },
+    {
+      "time": 22.92,
+      "type": "snare",
+      "velocity": 0.4639231163382014
+    },
+    {
+      "time": 22.92,
+      "type": "hihat",
+      "velocity": 0.7081255996620469
+    },
+    {
+      "time": 23.23,
+      "type": "snare",
+      "velocity": 0.5720683032640937
+    },
+    {
+      "time": 23.23,
+      "type": "hihat",
+      "velocity": 0.6748347474053984
+    },
+    {
+      "time": 23.55,
+      "type": "snare",
+      "velocity": 0.9738213084486117
+    },
+    {
+      "time": 23.55,
+      "type": "hihat",
+      "velocity": 0.9161482224024919
+    },
+    {
+      "time": 23.87,
+      "type": "kick",
+      "velocity": 0.3775322968519305
+    },
+    {
+      "time": 23.87,
+      "type": "hihat",
+      "velocity": 0.5408972827986664
+    },
+    {
+      "time": 24.02,
+      "type": "hihat",
+      "velocity": 0.5564339702737583
+    },
+    {
+      "time": 24.18,
+      "type": "hihat",
+      "velocity": 0.6281291074043153
+    },
+    {
+      "time": 24.5,
+      "type": "kick",
+      "velocity": 0.8063067112195601
+    },
+    {
+      "time": 24.5,
+      "type": "snare",
+      "velocity": 0.60879245196936
+    },
+    {
+      "time": 24.5,
+      "type": "hihat",
+      "velocity": 0.8420147261844624
+    },
+    {
+      "time": 24.81,
+      "type": "snare",
+      "velocity": 0.8860458742637246
+    },
+    {
+      "time": 24.81,
+      "type": "hihat",
+      "velocity": 0.8418831535378469
+    },
+    {
+      "time": 24.97,
+      "type": "hihat",
+      "velocity": 0.39359197913500804
+    },
+    {
+      "time": 25.13,
+      "type": "snare",
+      "velocity": 0.7545791449212602
+    },
+    {
+      "time": 25.13,
+      "type": "hihat",
+      "velocity": 0.7707113989539198
+    },
+    {
+      "time": 25.45,
+      "type": "kick",
+      "velocity": 0.8983377062713042
+    },
+    {
+      "time": 25.45,
+      "type": "hihat",
+      "velocity": 0.8019793540804095
+    },
+    {
+      "time": 25.76,
+      "type": "hihat",
+      "velocity": 0.7830619087429959
+    },
+    {
+      "time": 26.08,
+      "type": "kick",
+      "velocity": 0.34744707383661766
+    },
+    {
+      "time": 26.08,
+      "type": "snare",
+      "velocity": 0.9942905484634208
+    },
+    {
+      "time": 26.08,
+      "type": "hihat",
+      "velocity": 0.8955345497426999
+    },
+    {
+      "time": 26.39,
+      "type": "kick",
+      "velocity": 0.8466791574516808
+    },
+    {
+      "time": 26.39,
+      "type": "hihat",
+      "velocity": 0.7397845892112627
+    },
+    {
+      "time": 26.55,
+      "type": "hihat",
+      "velocity": 0.36049716107458146
+    },
+    {
+      "time": 26.71,
+      "type": "kick",
+      "velocity": 0.7381973164479185
+    },
+    {
+      "time": 26.71,
+      "type": "hihat",
+      "velocity": 0.8647307177733772
+    },
+    {
+      "time": 27.02,
+      "type": "kick",
+      "velocity": 0.7206546630968
+    },
+    {
+      "time": 27.02,
+      "type": "snare",
+      "velocity": 0.6502277544484769
+    },
+    {
+      "time": 27.02,
+      "type": "hihat",
+      "velocity": 0.7652914589383806
+    },
+    {
+      "time": 27.34,
+      "type": "snare",
+      "velocity": 0.9845019571431184
+    },
+    {
+      "time": 27.34,
+      "type": "hihat",
+      "velocity": 0.8970033683502256
+    },
+    {
+      "time": 27.66,
+      "type": "hihat",
+      "velocity": 0.6410306584299776
+    },
+    {
+      "time": 27.98,
+      "type": "kick",
+      "velocity": 0.645880687261577
+    },
+    {
+      "time": 27.98,
+      "type": "hihat",
+      "velocity": 0.5151155063727754
+    },
+    {
+      "time": 28.29,
+      "type": "kick",
+      "velocity": 0.310353636384257
+    },
+    {
+      "time": 28.29,
+      "type": "snare",
+      "velocity": 0.49647190145286313
+    },
+    {
+      "time": 28.29,
+      "type": "hihat",
+      "velocity": 0.6792564542813163
+    },
+    {
+      "time": 28.6,
+      "type": "kick",
+      "velocity": 0.28521431058033425
+    },
+    {
+      "time": 28.6,
+      "type": "snare",
+      "velocity": 0.9215986645247122
+    },
+    {
+      "time": 28.6,
+      "type": "hihat",
+      "velocity": 0.8275595064112907
+    },
+    {
+      "time": 28.92,
+      "type": "kick",
+      "velocity": 0.6236215810418033
+    },
+    {
+      "time": 28.92,
+      "type": "hihat",
+      "velocity": 0.7074181705056131
+    },
+    {
+      "time": 29.08,
+      "type": "hihat",
+      "velocity": 0.5878596057822429
+    },
+    {
+      "time": 29.23,
+      "type": "kick",
+      "velocity": 0.6160992574740339
+    },
+    {
+      "time": 29.23,
+      "type": "hihat",
+      "velocity": 0.5615042346552915
+    },
+    {
+      "time": 29.55,
+      "type": "kick",
+      "velocity": 0.4886753820405017
+    },
+    {
+      "time": 29.55,
+      "type": "snare",
+      "velocity": 0.5251451095720328
+    },
+    {
+      "time": 29.55,
+      "type": "hihat",
+      "velocity": 0.4665357316347106
+    },
+    {
+      "time": 29.71,
+      "type": "hihat",
+      "velocity": 0.41535814029172546
+    },
+    {
+      "time": 29.87,
+      "type": "kick",
+      "velocity": 0.5130605884929123
+    },
+    {
+      "time": 29.87,
+      "type": "hihat",
+      "velocity": 0.6200372603912502
+    },
+    {
+      "time": 30.5,
+      "type": "kick",
+      "velocity": 0.9507896976032775
+    },
+    {
+      "time": 30.5,
+      "type": "snare",
+      "velocity": 0.8182466704074829
+    },
+    {
+      "time": 30.5,
+      "type": "hihat",
+      "velocity": 0.5619189211353168
+    },
+    {
+      "time": 30.66,
+      "type": "hihat",
+      "velocity": 0.34337930771979236
+    },
+    {
+      "time": 30.82,
+      "type": "snare",
+      "velocity": 0.6990472162917956
+    },
+    {
+      "time": 30.82,
+      "type": "hihat",
+      "velocity": 0.4066958651098615
+    },
+    {
+      "time": 30.97,
+      "type": "hihat",
+      "velocity": 0.4564295500532139
+    },
+    {
+      "time": 31.13,
+      "type": "snare",
+      "velocity": 0.7017401904223255
+    },
+    {
+      "time": 31.13,
+      "type": "hihat",
+      "velocity": 0.3705376855789852
+    },
+    {
+      "time": 31.29,
+      "type": "hihat",
+      "velocity": 0.5865155743950582
+    },
+    {
+      "time": 31.45,
+      "type": "snare",
+      "velocity": 0.6097393097386182
+    },
+    {
+      "time": 31.6,
+      "type": "hihat",
+      "velocity": 0.5624571669966429
+    },
+    {
+      "time": 31.76,
+      "type": "snare",
+      "velocity": 0.4613162201866948
+    },
+    {
+      "time": 31.76,
+      "type": "hihat",
+      "velocity": 0.3942950785432478
+    },
+    {
+      "time": 31.92,
+      "type": "tom",
+      "velocity": 0.5246089639616963
+    },
+    {
+      "time": 31.92,
+      "type": "hihat",
+      "velocity": 0.5263337223859808
+    },
+    {
+      "time": 32.08,
+      "type": "snare",
+      "velocity": 0.38585048629857643
+    },
+    {
+      "time": 32.08,
+      "type": "hihat",
+      "velocity": 0.40269165581913957
+    },
+    {
+      "time": 32.23,
+      "type": "hihat",
+      "velocity": 0.46895728871426573
+    },
+    {
+      "time": 32.55,
+      "type": "hihat",
+      "velocity": 0.5961507504584524
+    },
+    {
+      "time": 32.71,
+      "type": "hihat",
+      "velocity": 0.3892917313894013
+    },
+    {
+      "time": 32.87,
+      "type": "kick",
+      "velocity": 0.9504213458912402
+    },
+    {
+      "time": 32.87,
+      "type": "snare",
+      "velocity": 0.32202812384708335
+    },
+    {
+      "time": 32.87,
+      "type": "hihat",
+      "velocity": 0.5924268438959694
+    },
+    {
+      "time": 33.03,
+      "type": "kick",
+      "velocity": 0.6763199802821974
+    },
+    {
+      "time": 33.03,
+      "type": "snare",
+      "velocity": 0.6297459129277299
+    },
+    {
+      "time": 33.03,
+      "type": "hihat",
+      "velocity": 0.36342714045140917
+    },
+    {
+      "time": 33.18,
+      "type": "hihat",
+      "velocity": 0.6690860050195352
+    },
+    {
+      "time": 33.34,
+      "type": "snare",
+      "velocity": 0.5168330916321412
+    },
+    {
+      "time": 33.34,
+      "type": "hihat",
+      "velocity": 0.32941376954275464
+    },
+    {
+      "time": 33.5,
+      "type": "hihat",
+      "velocity": 0.5933959320141646
+    },
+    {
+      "time": 33.66,
+      "type": "kick",
+      "velocity": 0.9164104629722196
+    },
+    {
+      "time": 33.66,
+      "type": "snare",
+      "velocity": 0.7138373130073843
+    },
+    {
+      "time": 33.66,
+      "type": "cymbal",
+      "velocity": 0.5330009529969644
+    },
+    {
+      "time": 33.82,
+      "type": "hihat",
+      "velocity": 0.6244610998297117
+    },
+    {
+      "time": 33.89,
+      "type": "snare",
+      "velocity": 0.3415924464893206
+    },
+    {
+      "time": 33.97,
+      "type": "snare",
+      "velocity": 0.7367702443677568
+    },
+    {
+      "time": 34.13,
+      "type": "hihat",
+      "velocity": 0.5904535126891671
+    },
+    {
+      "time": 34.29,
+      "type": "kick",
+      "velocity": 0.9727611663721253
+    },
+    {
+      "time": 34.29,
+      "type": "snare",
+      "velocity": 0.3510130738362299
+    },
+    {
+      "time": 34.29,
+      "type": "hihat",
+      "velocity": 0.3225323456423766
+    },
+    {
+      "time": 34.29,
+      "type": "cymbal",
+      "velocity": 0.5421845104744686
+    },
+    {
+      "time": 34.45,
+      "type": "hihat",
+      "velocity": 0.562906103723577
+    },
+    {
+      "time": 34.6,
+      "type": "snare",
+      "velocity": 0.42142169414516584
+    },
+    {
+      "time": 34.61,
+      "type": "kick",
+      "velocity": 0.8528500179749172
+    },
+    {
+      "time": 34.61,
+      "type": "cymbal",
+      "velocity": 0.5070430786034765
+    },
+    {
+      "time": 34.76,
+      "type": "hihat",
+      "velocity": 0.6086585528908791
+    },
+    {
+      "time": 34.92,
+      "type": "kick",
+      "velocity": 0.750484495591767
+    },
+    {
+      "time": 34.92,
+      "type": "hihat",
+      "velocity": 0.3532236364702057
+    },
+    {
+      "time": 35.08,
+      "type": "snare",
+      "velocity": 0.6681664182015893
+    },
+    {
+      "time": 35.08,
+      "type": "hihat",
+      "velocity": 0.6487113086108157
+    },
+    {
+      "time": 35.16,
+      "type": "snare",
+      "velocity": 0.48332791683988346
+    },
+    {
+      "time": 35.24,
+      "type": "kick",
+      "velocity": 0.8997778968422628
+    },
+    {
+      "time": 35.24,
+      "type": "hihat",
+      "velocity": 0.4804542888126867
+    },
+    {
+      "time": 35.39,
+      "type": "kick",
+      "velocity": 0.8185776053403502
+    },
+    {
+      "time": 35.39,
+      "type": "hihat",
+      "velocity": 0.7253137306461063
+    },
+    {
+      "time": 35.55,
+      "type": "kick",
+      "velocity": 0.7306221311783164
+    },
+    {
+      "time": 35.55,
+      "type": "snare",
+      "velocity": 0.6658421835217408
+    },
+    {
+      "time": 35.55,
+      "type": "hihat",
+      "velocity": 0.5315903274976298
+    },
+    {
+      "time": 35.71,
+      "type": "snare",
+      "velocity": 0.5663525832860992
+    },
+    {
+      "time": 35.71,
+      "type": "hihat",
+      "velocity": 0.6634942321614858
+    },
+    {
+      "time": 35.79,
+      "type": "snare",
+      "velocity": 0.5030525370999643
+    },
+    {
+      "time": 35.87,
+      "type": "snare",
+      "velocity": 0.613962946790432
+    },
+    {
+      "time": 35.87,
+      "type": "hihat",
+      "velocity": 0.5314736504772642
+    },
+    {
+      "time": 36.03,
+      "type": "hihat",
+      "velocity": 0.6099144383596045
+    },
+    {
+      "time": 36.18,
+      "type": "snare",
+      "velocity": 0.784514765443
+    },
+    {
+      "time": 36.34,
+      "type": "kick",
+      "velocity": 0.952854922868767
+    },
+    {
+      "time": 36.34,
+      "type": "snare",
+      "velocity": 0.3440599505982193
+    },
+    {
+      "time": 36.34,
+      "type": "hihat",
+      "velocity": 0.7535817518820349
+    },
+    {
+      "time": 36.5,
+      "type": "snare",
+      "velocity": 0.827576954650282
+    },
+    {
+      "time": 36.5,
+      "type": "hihat",
+      "velocity": 0.35283260204747974
+    },
+    {
+      "time": 36.66,
+      "type": "kick",
+      "velocity": 0.9009944268385969
+    },
+    {
+      "time": 36.66,
+      "type": "hihat",
+      "velocity": 0.7674624722306429
+    },
+    {
+      "time": 36.82,
+      "type": "kick",
+      "velocity": 0.8380877738186071
+    },
+    {
+      "time": 36.82,
+      "type": "snare",
+      "velocity": 0.7230782234926838
+    },
+    {
+      "time": 36.82,
+      "type": "cymbal",
+      "velocity": 0.44336640894756035
+    },
+    {
+      "time": 36.97,
+      "type": "snare",
+      "velocity": 0.4549014397446715
+    },
+    {
+      "time": 36.97,
+      "type": "hihat",
+      "velocity": 0.7161406098004431
+    },
+    {
+      "time": 37.05,
+      "type": "snare",
+      "velocity": 0.6982589436280355
+    },
+    {
+      "time": 37.13,
+      "type": "snare",
+      "velocity": 0.5955323719439813
+    },
+    {
+      "time": 37.13,
+      "type": "hihat",
+      "velocity": 0.6426970298767488
+    },
+    {
+      "time": 37.29,
+      "type": "hihat",
+      "velocity": 0.637360582915938
+    },
+    {
+      "time": 37.45,
+      "type": "kick",
+      "velocity": 0.9300783148051345
+    },
+    {
+      "time": 37.45,
+      "type": "cymbal",
+      "velocity": 0.7753994822784376
+    },
+    {
+      "time": 37.6,
+      "type": "snare",
+      "velocity": 0.5228479196626208
+    },
+    {
+      "time": 37.6,
+      "type": "hihat",
+      "velocity": 0.7021912597118029
+    },
+    {
+      "time": 37.69,
+      "type": "kick",
+      "velocity": 0.6896972866243545
+    },
+    {
+      "time": 37.92,
+      "type": "kick",
+      "velocity": 0.9607782328177982
+    },
+    {
+      "time": 37.92,
+      "type": "snare",
+      "velocity": 0.384015093114466
+    },
+    {
+      "time": 37.92,
+      "type": "hihat",
+      "velocity": 0.8170641967887355
+    },
+    {
+      "time": 38.08,
+      "type": "kick",
+      "velocity": 0.921610878292006
+    },
+    {
+      "time": 38.08,
+      "type": "snare",
+      "velocity": 0.7959960944378827
+    },
+    {
+      "time": 38.08,
+      "type": "hihat",
+      "velocity": 0.5035410554801655
+    },
+    {
+      "time": 38.23,
+      "type": "hihat",
+      "velocity": 0.5867445986875951
+    },
+    {
+      "time": 38.24,
+      "type": "snare",
+      "velocity": 0.5575569260106132
+    },
+    {
+      "time": 38.32,
+      "type": "snare",
+      "velocity": 0.7786719964359063
+    },
+    {
+      "time": 38.39,
+      "type": "snare",
+      "velocity": 0.6390736768693412
+    },
+    {
+      "time": 38.48,
+      "type": "snare",
+      "velocity": 0.5633029542259667
+    },
+    {
+      "time": 38.55,
+      "type": "kick",
+      "velocity": 0.8765775550635726
+    },
+    {
+      "time": 38.55,
+      "type": "snare",
+      "velocity": 0.6368176841908808
+    },
+    {
+      "time": 38.55,
+      "type": "hihat",
+      "velocity": 0.5442900605589601
+    },
+    {
+      "time": 38.71,
+      "type": "kick",
+      "velocity": 0.9131474484115348
+    },
+    {
+      "time": 38.71,
+      "type": "snare",
+      "velocity": 0.8918967211592402
+    },
+    {
+      "time": 38.71,
+      "type": "hihat",
+      "velocity": 0.30726423180153517
+    },
+    {
+      "time": 38.71,
+      "type": "cymbal",
+      "velocity": 0.6004339053921585
+    },
+    {
+      "time": 38.78,
+      "type": "kick",
+      "velocity": 0.6011618200736303
+    },
+    {
+      "time": 38.95,
+      "type": "snare",
+      "velocity": 0.6150153340940334
+    },
+    {
+      "time": 39.03,
+      "type": "snare",
+      "velocity": 0.7866149518095794
+    },
+    {
+      "time": 39.03,
+      "type": "hihat",
+      "velocity": 0.3355262107769242
+    },
+    {
+      "time": 39.11,
+      "type": "snare",
+      "velocity": 0.526501710153602
+    },
+    {
+      "time": 39.18,
+      "type": "kick",
+      "velocity": 0.8129972707723062
+    },
+    {
+      "time": 39.18,
+      "type": "snare",
+      "velocity": 0.49259415958327396
+    },
+    {
+      "time": 39.18,
+      "type": "hihat",
+      "velocity": 0.6881267512458203
+    },
+    {
+      "time": 39.34,
+      "type": "kick",
+      "velocity": 0.9531155478608103
+    },
+    {
+      "time": 39.34,
+      "type": "snare",
+      "velocity": 0.9324169604379274
+    },
+    {
+      "time": 39.34,
+      "type": "hihat",
+      "velocity": 0.70926115690484
+    },
+    {
+      "time": 39.5,
+      "type": "kick",
+      "velocity": 0.8917482172584926
+    },
+    {
+      "time": 39.5,
+      "type": "snare",
+      "velocity": 0.8322666535524841
+    },
+    {
+      "time": 39.5,
+      "type": "hihat",
+      "velocity": 0.8872650538074609
+    },
+    {
+      "time": 39.58,
+      "type": "kick",
+      "velocity": 0.5359290583036783
+    },
+    {
+      "time": 39.66,
+      "type": "kick",
+      "velocity": 0.9681570930871951
+    },
+    {
+      "time": 39.66,
+      "type": "snare",
+      "velocity": 0.9752600126881008
+    },
+    {
+      "time": 39.66,
+      "type": "hihat",
+      "velocity": 0.5393670722391344
+    },
+    {
+      "time": 39.82,
+      "type": "kick",
+      "velocity": 0.9096954112617784
+    },
+    {
+      "time": 39.82,
+      "type": "snare",
+      "velocity": 0.8752087084031559
+    },
+    {
+      "time": 39.82,
+      "type": "hihat",
+      "velocity": 0.8060880266242032
+    },
+    {
+      "time": 39.89,
+      "type": "kick",
+      "velocity": 0.5449677630860015
+    },
+    {
+      "time": 39.97,
+      "type": "hihat",
+      "velocity": 0.43551996818475175
+    },
+    {
+      "time": 40.13,
+      "type": "kick",
+      "velocity": 0.9271744754752399
+    },
+    {
+      "time": 40.13,
+      "type": "snare",
+      "velocity": 0.3730779876183419
+    },
+    {
+      "time": 40.13,
+      "type": "hihat",
+      "velocity": 0.8166400107119263
+    },
+    {
+      "time": 40.21,
+      "type": "kick",
+      "velocity": 0.6499781153846874
+    },
+    {
+      "time": 40.21,
+      "type": "snare",
+      "velocity": 0.680376954340091
+    },
+    {
+      "time": 40.45,
+      "type": "kick",
+      "velocity": 0.9149245838643467
+    },
+    {
+      "time": 40.45,
+      "type": "snare",
+      "velocity": 0.6507546912660125
+    },
+    {
+      "time": 40.45,
+      "type": "hihat",
+      "velocity": 0.8319616971087815
+    },
+    {
+      "time": 40.53,
+      "type": "kick",
+      "velocity": 0.6540120189932482
+    },
+    {
+      "time": 40.53,
+      "type": "snare",
+      "velocity": 0.6010172581824325
+    },
+    {
+      "time": 40.61,
+      "type": "kick",
+      "velocity": 0.8416035939753428
+    },
+    {
+      "time": 40.91,
+      "type": "hihat",
+      "velocity": 0.531643964676751
+    },
+    {
+      "time": 41.18,
+      "type": "hihat",
+      "velocity": 0.41910469725334343
+    },
+    {
+      "time": 41.55,
+      "type": "snare",
+      "velocity": 0.9366831841175013
+    },
+    {
+      "time": 41.55,
+      "type": "hihat",
+      "velocity": 0.7470984386346403
+    },
+    {
+      "time": 41.75,
+      "type": "hihat",
+      "velocity": 0.5948279154504866
+    },
+    {
+      "time": 41.87,
+      "type": "kick",
+      "velocity": 0.91627456057741
+    },
+    {
+      "time": 41.87,
+      "type": "hihat",
+      "velocity": 0.703464011811553
+    },
+    {
+      "time": 42.02,
+      "type": "hihat",
+      "velocity": 0.34769403104145113
+    },
+    {
+      "time": 42.18,
+      "type": "kick",
+      "velocity": 0.8583718686307868
+    },
+    {
+      "time": 42.18,
+      "type": "hihat",
+      "velocity": 0.7531673885175465
+    },
+    {
+      "time": 42.34,
+      "type": "hihat",
+      "velocity": 0.6558214659997476
+    },
+    {
+      "time": 42.5,
+      "type": "kick",
+      "velocity": 0.9621931557537733
+    },
+    {
+      "time": 42.5,
+      "type": "snare",
+      "velocity": 0.5593477615621886
+    },
+    {
+      "time": 42.5,
+      "type": "hihat",
+      "velocity": 0.8383893052376188
+    },
+    {
+      "time": 42.65,
+      "type": "hihat",
+      "velocity": 0.49808205079621803
+    },
+    {
+      "time": 42.82,
+      "type": "kick",
+      "velocity": 0.8942088066949022
+    },
+    {
+      "time": 42.82,
+      "type": "hihat",
+      "velocity": 0.7611518319261543
+    },
+    {
+      "time": 42.97,
+      "type": "snare",
+      "velocity": 0.7408553294773587
+    },
+    {
+      "time": 42.97,
+      "type": "hihat",
+      "velocity": 0.6356650018246334
+    },
+    {
+      "time": 43.13,
+      "type": "kick",
+      "velocity": 0.9215954333693435
+    },
+    {
+      "time": 43.13,
+      "type": "hihat",
+      "velocity": 0.7945756785377807
+    },
+    {
+      "time": 43.29,
+      "type": "hihat",
+      "velocity": 0.5699502809198789
+    },
+    {
+      "time": 43.45,
+      "type": "kick",
+      "velocity": 0.9704388703854981
+    },
+    {
+      "time": 43.45,
+      "type": "snare",
+      "velocity": 0.3339284367586316
+    },
+    {
+      "time": 43.45,
+      "type": "hihat",
+      "velocity": 0.831520256662303
+    },
+    {
+      "time": 43.6,
+      "type": "snare",
+      "velocity": 0.5600679214707753
+    },
+    {
+      "time": 43.6,
+      "type": "hihat",
+      "velocity": 0.6845992989297572
+    },
+    {
+      "time": 43.76,
+      "type": "kick",
+      "velocity": 0.8609670033767511
+    },
+    {
+      "time": 43.76,
+      "type": "hihat",
+      "velocity": 0.7337227478701678
+    },
+    {
+      "time": 43.92,
+      "type": "hihat",
+      "velocity": 0.60216599853913
+    },
+    {
+      "time": 44.08,
+      "type": "kick",
+      "velocity": 0.9840636832289013
+    },
+    {
+      "time": 44.08,
+      "type": "snare",
+      "velocity": 0.47847213655172777
+    },
+    {
+      "time": 44.08,
+      "type": "hihat",
+      "velocity": 0.8770613236453817
+    },
+    {
+      "time": 44.23,
+      "type": "snare",
+      "velocity": 0.5679645420764606
+    },
+    {
+      "time": 44.23,
+      "type": "hihat",
+      "velocity": 0.7424672236446127
+    },
+    {
+      "time": 44.4,
+      "type": "kick",
+      "velocity": 0.8785441008441005
+    },
+    {
+      "time": 44.4,
+      "type": "hihat",
+      "velocity": 0.7772208199366939
+    },
+    {
+      "time": 44.55,
+      "type": "hihat",
+      "velocity": 0.5867957155655288
+    },
+    {
+      "time": 44.71,
+      "type": "kick",
+      "velocity": 0.9834486651160136
+    },
+    {
+      "time": 44.71,
+      "type": "snare",
+      "velocity": 0.7946415941073032
+    },
+    {
+      "time": 44.71,
+      "type": "hihat",
+      "velocity": 0.8228512606772721
+    },
+    {
+      "time": 44.87,
+      "type": "hihat",
+      "velocity": 0.6396007429330915
+    },
+    {
+      "time": 45.03,
+      "type": "kick",
+      "velocity": 0.9046860218473923
+    },
+    {
+      "time": 45.03,
+      "type": "hihat",
+      "velocity": 0.7722760536296828
+    },
+    {
+      "time": 45.18,
+      "type": "hihat",
+      "velocity": 0.5882635648264439
+    },
+    {
+      "time": 45.26,
+      "type": "snare",
+      "velocity": 0.562154536984806
+    },
+    {
+      "time": 45.34,
+      "type": "kick",
+      "velocity": 0.9470182930568739
+    },
+    {
+      "time": 45.34,
+      "type": "hihat",
+      "velocity": 0.8466974457910679
+    },
+    {
+      "time": 45.5,
+      "type": "snare",
+      "velocity": 0.6420484077480262
+    },
+    {
+      "time": 45.5,
+      "type": "hihat",
+      "velocity": 0.6367044645067599
+    },
+    {
+      "time": 45.66,
+      "type": "kick",
+      "velocity": 0.9550223818901238
+    },
+    {
+      "time": 45.66,
+      "type": "snare",
+      "velocity": 0.4380530001245287
+    },
+    {
+      "time": 45.66,
+      "type": "hihat",
+      "velocity": 0.7662568635394553
+    },
+    {
+      "time": 45.81,
+      "type": "hihat",
+      "velocity": 0.5426932881988318
+    },
+    {
+      "time": 45.89,
+      "type": "snare",
+      "velocity": 0.6288748580634225
+    },
+    {
+      "time": 45.97,
+      "type": "kick",
+      "velocity": 0.9102531086784245
+    },
+    {
+      "time": 45.97,
+      "type": "hihat",
+      "velocity": 0.7350051934360241
+    },
+    {
+      "time": 46.13,
+      "type": "snare",
+      "velocity": 0.75954142409037
+    },
+    {
+      "time": 46.13,
+      "type": "hihat",
+      "velocity": 0.746880012531713
+    },
+    {
+      "time": 46.29,
+      "type": "kick",
+      "velocity": 0.9702529497055803
+    },
+    {
+      "time": 46.29,
+      "type": "hihat",
+      "velocity": 0.8659779437457142
+    },
+    {
+      "time": 46.45,
+      "type": "hihat",
+      "velocity": 0.6749259952330118
+    },
+    {
+      "time": 46.6,
+      "type": "snare",
+      "velocity": 0.36987290767341885
+    },
+    {
+      "time": 46.61,
+      "type": "kick",
+      "velocity": 0.8959417399422696
+    },
+    {
+      "time": 46.61,
+      "type": "hihat",
+      "velocity": 0.6620541062136345
+    },
+    {
+      "time": 46.76,
+      "type": "snare",
+      "velocity": 0.7195961365979979
+    },
+    {
+      "time": 46.76,
+      "type": "hihat",
+      "velocity": 0.743948708381184
+    },
+    {
+      "time": 46.92,
+      "type": "kick",
+      "velocity": 0.9680390912931284
+    },
+    {
+      "time": 46.92,
+      "type": "hihat",
+      "velocity": 0.7768328874231218
+    },
+    {
+      "time": 47.08,
+      "type": "hihat",
+      "velocity": 0.6511406204632558
+    },
+    {
+      "time": 47.24,
+      "type": "kick",
+      "velocity": 0.9674541875482774
+    },
+    {
+      "time": 47.24,
+      "type": "snare",
+      "velocity": 0.42229753111941887
+    },
+    {
+      "time": 47.24,
+      "type": "hihat",
+      "velocity": 0.7528343210221359
+    },
+    {
+      "time": 47.39,
+      "type": "snare",
+      "velocity": 0.4631236315653119
+    },
+    {
+      "time": 47.39,
+      "type": "hihat",
+      "velocity": 0.7257878057618091
+    },
+    {
+      "time": 47.55,
+      "type": "kick",
+      "velocity": 0.9015612361133828
+    },
+    {
+      "time": 47.55,
+      "type": "snare",
+      "velocity": 0.32321783525385667
+    },
+    {
+      "time": 47.55,
+      "type": "hihat",
+      "velocity": 0.6825958533549182
+    },
+    {
+      "time": 47.71,
+      "type": "hihat",
+      "velocity": 0.7039834523486331
+    },
+    {
+      "time": 47.87,
+      "type": "kick",
+      "velocity": 0.9828021755498343
+    },
+    {
+      "time": 47.87,
+      "type": "hihat",
+      "velocity": 0.8409373943614141
+    },
+    {
+      "time": 48.02,
+      "type": "snare",
+      "velocity": 0.6566764297103185
+    },
+    {
+      "time": 48.02,
+      "type": "hihat",
+      "velocity": 0.6346775607439438
+    },
+    {
+      "time": 48.18,
+      "type": "kick",
+      "velocity": 0.8812598869315339
+    },
+    {
+      "time": 48.18,
+      "type": "hihat",
+      "velocity": 0.5992223513750925
+    },
+    {
+      "time": 48.34,
+      "type": "hihat",
+      "velocity": 0.7215441355467092
+    },
+    {
+      "time": 48.5,
+      "type": "kick",
+      "velocity": 0.9999999999999999
+    },
+    {
+      "time": 48.5,
+      "type": "hihat",
+      "velocity": 0.8066875351913209
+    },
+    {
+      "time": 48.65,
+      "type": "snare",
+      "velocity": 0.5259168710318585
+    },
+    {
+      "time": 48.65,
+      "type": "hihat",
+      "velocity": 0.6796038681065643
+    },
+    {
+      "time": 48.82,
+      "type": "kick",
+      "velocity": 0.958627252688822
+    },
+    {
+      "time": 48.82,
+      "type": "hihat",
+      "velocity": 0.8057627139016775
+    },
+    {
+      "time": 48.97,
+      "type": "hihat",
+      "velocity": 0.7360599717945985
+    },
+    {
+      "time": 49.05,
+      "type": "snare",
+      "velocity": 0.5397529691248241
+    },
+    {
+      "time": 49.13,
+      "type": "kick",
+      "velocity": 0.9723281269296056
+    },
+    {
+      "time": 49.13,
+      "type": "hihat",
+      "velocity": 0.8161359504744015
+    },
+    {
+      "time": 49.29,
+      "type": "snare",
+      "velocity": 0.36611662493414093
+    },
+    {
+      "time": 49.29,
+      "type": "hihat",
+      "velocity": 0.7547719156505598
+    },
+    {
+      "time": 49.45,
+      "type": "kick",
+      "velocity": 0.9630260183616219
+    },
+    {
+      "time": 49.45,
+      "type": "hihat",
+      "velocity": 0.8330453619963525
+    },
+    {
+      "time": 49.6,
+      "type": "hihat",
+      "velocity": 0.5914360424136963
+    },
+    {
+      "time": 49.68,
+      "type": "snare",
+      "velocity": 0.3757015242199975
+    },
+    {
+      "time": 49.76,
+      "type": "kick",
+      "velocity": 0.9396138420369565
+    },
+    {
+      "time": 49.76,
+      "type": "hihat",
+      "velocity": 0.8049461363168874
+    },
+    {
+      "time": 49.91,
+      "type": "snare",
+      "velocity": 0.46106861675078764
+    },
+    {
+      "time": 49.91,
+      "type": "hihat",
+      "velocity": 0.6526319925352556
+    },
+    {
+      "time": 50.08,
+      "type": "kick",
+      "velocity": 0.9777383734790386
+    },
+    {
+      "time": 50.08,
+      "type": "snare",
+      "velocity": 0.5508705023367392
+    },
+    {
+      "time": 50.08,
+      "type": "hihat",
+      "velocity": 0.8172656916375307
+    },
+    {
+      "time": 50.24,
+      "type": "hihat",
+      "velocity": 0.5162817595915716
+    },
+    {
+      "time": 50.32,
+      "type": "snare",
+      "velocity": 0.41275431373781923
+    },
+    {
+      "time": 50.4,
+      "type": "kick",
+      "velocity": 0.9359928800845218
+    },
+    {
+      "time": 50.4,
+      "type": "hihat",
+      "velocity": 0.8439350664432171
+    },
+    {
+      "time": 50.54,
+      "type": "snare",
+      "velocity": 0.5034949792046072
+    },
+    {
+      "time": 50.55,
+      "type": "hihat",
+      "velocity": 0.6286242496530223
+    },
+    {
+      "time": 50.71,
+      "type": "kick",
+      "velocity": 0.6893324245601153
+    },
+    {
+      "time": 50.71,
+      "type": "hihat",
+      "velocity": 0.6527438551341217
+    },
+    {
+      "time": 50.87,
+      "type": "hihat",
+      "velocity": 0.70358963913229
+    },
+    {
+      "time": 51.02,
+      "type": "kick",
+      "velocity": 0.36118901606213794
+    },
+    {
+      "time": 51.02,
+      "type": "snare",
+      "velocity": 0.6745716021121675
+    },
+    {
+      "time": 51.02,
+      "type": "hihat",
+      "velocity": 0.5801307467633031
+    },
+    {
+      "time": 51.18,
+      "type": "hihat",
+      "velocity": 0.7907891521842513
+    },
+    {
+      "time": 51.34,
+      "type": "hihat",
+      "velocity": 0.6827972835806061
+    },
+    {
+      "time": 51.5,
+      "type": "snare",
+      "velocity": 0.5086774293005434
+    },
+    {
+      "time": 51.5,
+      "type": "hihat",
+      "velocity": 0.7717082750082862
+    },
+    {
+      "time": 51.65,
+      "type": "hihat",
+      "velocity": 0.6372988032252875
+    },
+    {
+      "time": 51.74,
+      "type": "hihat",
+      "velocity": 0.6386399265726405
+    },
+    {
+      "time": 51.81,
+      "type": "hihat",
+      "velocity": 0.6914082480152143
+    },
+    {
+      "time": 51.97,
+      "type": "kick",
+      "velocity": 0.9316100763192435
+    },
+    {
+      "time": 51.97,
+      "type": "snare",
+      "velocity": 0.8055819630703498
+    },
+    {
+      "time": 51.97,
+      "type": "hihat",
+      "velocity": 0.47330852409159135
+    },
+    {
+      "time": 52.13,
+      "type": "hihat",
+      "velocity": 0.6149335858632041
+    },
+    {
+      "time": 52.29,
+      "type": "kick",
+      "velocity": 0.9847532764076996
+    },
+    {
+      "time": 52.29,
+      "type": "snare",
+      "velocity": 0.5802387965988342
+    },
+    {
+      "time": 52.29,
+      "type": "hihat",
+      "velocity": 0.8179115995957437
+    },
+    {
+      "time": 52.44,
+      "type": "snare",
+      "velocity": 0.6200782960644333
+    },
+    {
+      "time": 52.44,
+      "type": "hihat",
+      "velocity": 0.6537056408411834
+    },
+    {
+      "time": 52.61,
+      "type": "kick",
+      "velocity": 0.8610798353222279
+    },
+    {
+      "time": 52.61,
+      "type": "hihat",
+      "velocity": 0.6811489419807926
+    },
+    {
+      "time": 52.76,
+      "type": "hihat",
+      "velocity": 0.6727369520937919
+    },
+    {
+      "time": 52.84,
+      "type": "snare",
+      "velocity": 0.5016772604403638
+    },
+    {
+      "time": 52.92,
+      "type": "kick",
+      "velocity": 0.980316124609119
+    },
+    {
+      "time": 52.92,
+      "type": "hihat",
+      "velocity": 0.8851901350758652
+    },
+    {
+      "time": 53.07,
+      "type": "snare",
+      "velocity": 0.6499955636236787
+    },
+    {
+      "time": 53.07,
+      "type": "hihat",
+      "velocity": 0.6117404288815917
+    },
+    {
+      "time": 53.24,
+      "type": "kick",
+      "velocity": 0.9571573354884708
+    },
+    {
+      "time": 53.24,
+      "type": "snare",
+      "velocity": 0.36421835346655473
+    },
+    {
+      "time": 53.24,
+      "type": "hihat",
+      "velocity": 0.8309743852743067
+    },
+    {
+      "time": 53.39,
+      "type": "hihat",
+      "velocity": 0.6302526873357643
+    },
+    {
+      "time": 53.47,
+      "type": "snare",
+      "velocity": 0.5983065773204816
+    },
+    {
+      "time": 53.55,
+      "type": "kick",
+      "velocity": 0.9341867288564986
+    },
+    {
+      "time": 53.55,
+      "type": "hihat",
+      "velocity": 0.753272788805675
+    },
+    {
+      "time": 53.7,
+      "type": "snare",
+      "velocity": 0.7772048580291723
+    },
+    {
+      "time": 53.7,
+      "type": "hihat",
+      "velocity": 0.6820736986473285
+    },
+    {
+      "time": 53.87,
+      "type": "kick",
+      "velocity": 0.9585723876706607
+    },
+    {
+      "time": 53.87,
+      "type": "hihat",
+      "velocity": 0.8255647849559473
+    },
+    {
+      "time": 54.02,
+      "type": "hihat",
+      "velocity": 0.8086116882134108
+    },
+    {
+      "time": 54.18,
+      "type": "kick",
+      "velocity": 0.8728473154365668
+    },
+    {
+      "time": 54.18,
+      "type": "hihat",
+      "velocity": 0.7215875622748652
+    },
+    {
+      "time": 54.34,
+      "type": "snare",
+      "velocity": 0.4929017009512715
+    },
+    {
+      "time": 54.34,
+      "type": "hihat",
+      "velocity": 0.8067193297601494
+    },
+    {
+      "time": 54.5,
+      "type": "kick",
+      "velocity": 0.9839763774108377
+    },
+    {
+      "time": 54.5,
+      "type": "hihat",
+      "velocity": 0.8156455903356401
+    },
+    {
+      "time": 54.65,
+      "type": "hihat",
+      "velocity": 0.6386384402411708
+    },
+    {
+      "time": 54.73,
+      "type": "snare",
+      "velocity": 0.6485536928519282
+    },
+    {
+      "time": 54.82,
+      "type": "kick",
+      "velocity": 0.9341816882541233
+    },
+    {
+      "time": 54.82,
+      "type": "hihat",
+      "velocity": 0.8398483011328236
+    },
+    {
+      "time": 54.97,
+      "type": "snare",
+      "velocity": 0.7602439418906433
+    },
+    {
+      "time": 54.97,
+      "type": "hihat",
+      "velocity": 0.7487834861594429
+    },
+    {
+      "time": 55.13,
+      "type": "kick",
+      "velocity": 0.914815887797742
+    },
+    {
+      "time": 55.13,
+      "type": "hihat",
+      "velocity": 0.7940922976946159
+    },
+    {
+      "time": 55.29,
+      "type": "hihat",
+      "velocity": 0.7007435082372813
+    },
+    {
+      "time": 55.45,
+      "type": "kick",
+      "velocity": 0.9784154297750062
+    },
+    {
+      "time": 55.45,
+      "type": "hihat",
+      "velocity": 0.9068760989563303
+    },
+    {
+      "time": 55.6,
+      "type": "snare",
+      "velocity": 0.816157599215372
+    },
+    {
+      "time": 55.6,
+      "type": "hihat",
+      "velocity": 0.7039804796856939
+    },
+    {
+      "time": 55.76,
+      "type": "kick",
+      "velocity": 0.8517206645504322
+    },
+    {
+      "time": 55.76,
+      "type": "hihat",
+      "velocity": 0.6685573880012079
+    },
+    {
+      "time": 55.92,
+      "type": "hihat",
+      "velocity": 0.7615292954963316
+    },
+    {
+      "time": 56.0,
+      "type": "snare",
+      "velocity": 0.43362683425420184
+    },
+    {
+      "time": 56.08,
+      "type": "kick",
+      "velocity": 0.9480100638857577
+    },
+    {
+      "time": 56.08,
+      "type": "hihat",
+      "velocity": 0.7224549336220522
+    },
+    {
+      "time": 56.23,
+      "type": "snare",
+      "velocity": 0.6873203841119955
+    },
+    {
+      "time": 56.23,
+      "type": "hihat",
+      "velocity": 0.7396210281264965
+    },
+    {
+      "time": 56.4,
+      "type": "kick",
+      "velocity": 0.9160361013111963
+    },
+    {
+      "time": 56.4,
+      "type": "hihat",
+      "velocity": 0.7752837422931289
+    },
+    {
+      "time": 56.55,
+      "type": "hihat",
+      "velocity": 0.8460036521102902
+    },
+    {
+      "time": 56.71,
+      "type": "kick",
+      "velocity": 0.9639815356272683
+    },
+    {
+      "time": 56.71,
+      "type": "hihat",
+      "velocity": 0.7778229134281065
+    },
+    {
+      "time": 56.87,
+      "type": "snare",
+      "velocity": 0.674298375614186
+    },
+    {
+      "time": 56.87,
+      "type": "hihat",
+      "velocity": 0.7961464724087443
+    },
+    {
+      "time": 57.03,
+      "type": "kick",
+      "velocity": 0.9369788348337418
+    },
+    {
+      "time": 57.03,
+      "type": "hihat",
+      "velocity": 0.7791690127547273
+    },
+    {
+      "time": 57.18,
+      "type": "hihat",
+      "velocity": 0.7524513644878318
+    },
+    {
+      "time": 57.26,
+      "type": "hihat",
+      "velocity": 0.5636353754903035
+    },
+    {
+      "time": 57.34,
+      "type": "kick",
+      "velocity": 0.9165437158196268
+    },
+    {
+      "time": 57.34,
+      "type": "hihat",
+      "velocity": 0.7647841029223796
+    },
+    {
+      "time": 57.49,
+      "type": "snare",
+      "velocity": 0.6398384913451242
+    },
+    {
+      "time": 57.49,
+      "type": "hihat",
+      "velocity": 0.6400091609717015
+    },
+    {
+      "time": 57.66,
+      "type": "kick",
+      "velocity": 0.9627064570956527
+    },
+    {
+      "time": 57.66,
+      "type": "hihat",
+      "velocity": 0.760715238212729
+    },
+    {
+      "time": 57.81,
+      "type": "hihat",
+      "velocity": 0.6737004180016454
+    },
+    {
+      "time": 57.89,
+      "type": "snare",
+      "velocity": 0.5934497630626079
+    },
+    {
+      "time": 57.97,
+      "type": "kick",
+      "velocity": 0.9010722976829837
+    },
+    {
+      "time": 57.97,
+      "type": "hihat",
+      "velocity": 0.7147385468628357
+    },
+    {
+      "time": 58.13,
+      "type": "snare",
+      "velocity": 0.6406900946541115
+    },
+    {
+      "time": 58.13,
+      "type": "hihat",
+      "velocity": 0.6887530784024987
+    },
+    {
+      "time": 58.29,
+      "type": "kick",
+      "velocity": 0.95937003068499
+    },
+    {
+      "time": 58.29,
+      "type": "hihat",
+      "velocity": 0.7984786557307997
+    },
+    {
+      "time": 58.45,
+      "type": "hihat",
+      "velocity": 0.6345186525229087
+    },
+    {
+      "time": 58.52,
+      "type": "snare",
+      "velocity": 0.47114154974353994
+    },
+    {
+      "time": 58.6,
+      "type": "kick",
+      "velocity": 0.8899254578918739
+    },
+    {
+      "time": 58.6,
+      "type": "hihat",
+      "velocity": 0.759566433232924
+    },
+    {
+      "time": 58.76,
+      "type": "snare",
+      "velocity": 0.8398746673606327
+    },
+    {
+      "time": 58.76,
+      "type": "hihat",
+      "velocity": 0.750884835741955
+    },
+    {
+      "time": 58.92,
+      "type": "kick",
+      "velocity": 0.9011186970740789
+    },
+    {
+      "time": 58.92,
+      "type": "hihat",
+      "velocity": 0.7006621477450962
+    },
+    {
+      "time": 59.08,
+      "type": "hihat",
+      "velocity": 0.778990588355265
+    },
+    {
+      "time": 59.16,
+      "type": "snare",
+      "velocity": 0.4353769572481309
+    },
+    {
+      "time": 59.24,
+      "type": "kick",
+      "velocity": 0.9577295731042762
+    },
+    {
+      "time": 59.24,
+      "type": "hihat",
+      "velocity": 0.7869623656348274
+    },
+    {
+      "time": 59.39,
+      "type": "snare",
+      "velocity": 0.6963418345246495
+    },
+    {
+      "time": 59.39,
+      "type": "hihat",
+      "velocity": 0.7751744646185579
+    },
+    {
+      "time": 59.47,
+      "type": "hihat",
+      "velocity": 0.4963756130228744
+    },
+    {
+      "time": 59.55,
+      "type": "kick",
+      "velocity": 0.9304323201873346
+    },
+    {
+      "time": 59.55,
+      "type": "hihat",
+      "velocity": 0.7567548757003609
+    },
+    {
+      "time": 59.71,
+      "type": "kick",
+      "velocity": 0.9163118481103654
+    },
+    {
+      "time": 59.71,
+      "type": "hihat",
+      "velocity": 0.8668774974003739
+    },
+    {
+      "time": 59.87,
+      "type": "kick",
+      "velocity": 0.9020819044895029
+    },
+    {
+      "time": 59.87,
+      "type": "hihat",
+      "velocity": 0.8399769011164998
+    },
+    {
+      "time": 60.03,
+      "type": "kick",
+      "velocity": 0.8702676256132652
+    },
+    {
+      "time": 60.03,
+      "type": "snare",
+      "velocity": 0.5995051420929653
+    },
+    {
+      "time": 60.03,
+      "type": "hihat",
+      "velocity": 0.7148051732865393
+    },
+    {
+      "time": 60.18,
+      "type": "hihat",
+      "velocity": 0.6742937873735624
+    },
+    {
+      "time": 60.19,
+      "type": "kick",
+      "velocity": 0.7662275892718146
+    },
+    {
+      "time": 60.34,
+      "type": "kick",
+      "velocity": 0.8588623580157629
+    },
+    {
+      "time": 60.34,
+      "type": "hihat",
+      "velocity": 0.7670258138941102
+    },
+    {
+      "time": 60.5,
+      "type": "kick",
+      "velocity": 0.8294567115976053
+    },
+    {
+      "time": 60.5,
+      "type": "hihat",
+      "velocity": 0.73612123450039
+    },
+    {
+      "time": 60.66,
+      "type": "snare",
+      "velocity": 0.7222343749565813
+    },
+    {
+      "time": 60.66,
+      "type": "hihat",
+      "velocity": 0.7023586981830114
+    },
+    {
+      "time": 60.82,
+      "type": "kick",
+      "velocity": 0.8312925248319136
+    },
+    {
+      "time": 60.82,
+      "type": "hihat",
+      "velocity": 0.38493787877622704
+    },
+    {
+      "time": 61.13,
+      "type": "kick",
+      "velocity": 0.7632825850225221
+    },
+    {
+      "time": 61.13,
+      "type": "hihat",
+      "velocity": 0.6566090278093264
+    },
+    {
+      "time": 62.08,
+      "type": "kick",
+      "velocity": 0.869066734408916
+    },
+    {
+      "time": 62.08,
+      "type": "snare",
+      "velocity": 0.6174748249376176
+    },
+    {
+      "time": 62.08,
+      "type": "cymbal",
+      "velocity": 0.7027944517960409
+    },
+    {
+      "time": 62.39,
+      "type": "snare",
+      "velocity": 0.47258025398302905
+    },
+    {
+      "time": 62.39,
+      "type": "hihat",
+      "velocity": 0.4741629061941959
+    },
+    {
+      "time": 62.55,
+      "type": "kick",
+      "velocity": 0.879880506704615
+    },
+    {
+      "time": 62.55,
+      "type": "hihat",
+      "velocity": 0.712281899435976
+    },
+    {
+      "time": 62.71,
+      "type": "snare",
+      "velocity": 0.9783155224510045
+    },
+    {
+      "time": 62.71,
+      "type": "hihat",
+      "velocity": 0.5408666837573244
+    },
+    {
+      "time": 63.02,
+      "type": "snare",
+      "velocity": 0.44666855279976053
+    },
+    {
+      "time": 63.02,
+      "type": "hihat",
+      "velocity": 0.43733086921116704
+    },
+    {
+      "time": 63.18,
+      "type": "kick",
+      "velocity": 0.9358317100547286
+    },
+    {
+      "time": 63.18,
+      "type": "hihat",
+      "velocity": 0.8425707434003167
+    },
+    {
+      "time": 63.34,
+      "type": "kick",
+      "velocity": 0.35542046669386435
+    },
+    {
+      "time": 63.34,
+      "type": "hihat",
+      "velocity": 0.48834528720803033
+    },
+    {
+      "time": 63.65,
+      "type": "snare",
+      "velocity": 0.5598778649119855
+    },
+    {
+      "time": 64.13,
+      "type": "hihat",
+      "velocity": 0.5390588846400631
+    },
+    {
+      "time": 64.29,
+      "type": "snare",
+      "velocity": 0.8974881709017527
+    },
+    {
+      "time": 64.29,
+      "type": "hihat",
+      "velocity": 0.8287977497717026
+    },
+    {
+      "time": 64.44,
+      "type": "hihat",
+      "velocity": 0.6343620061106318
+    },
+    {
+      "time": 64.6,
+      "type": "kick",
+      "velocity": 0.9695916614478122
+    },
+    {
+      "time": 64.6,
+      "type": "snare",
+      "velocity": 0.490912472460055
+    },
+    {
+      "time": 64.6,
+      "type": "hihat",
+      "velocity": 0.8506300849903721
+    },
+    {
+      "time": 64.77,
+      "type": "hihat",
+      "velocity": 0.44103280391714256
+    },
+    {
+      "time": 65.08,
+      "type": "kick",
+      "velocity": 0.8202256884477341
+    },
+    {
+      "time": 65.08,
+      "type": "hihat",
+      "velocity": 0.6520820498914945
+    },
+    {
+      "time": 65.23,
+      "type": "snare",
+      "velocity": 0.8614766212015103
+    },
+    {
+      "time": 65.55,
+      "type": "kick",
+      "velocity": 0.8738163389316547
+    },
+    {
+      "time": 65.55,
+      "type": "snare",
+      "velocity": 0.45283282176604484
+    },
+    {
+      "time": 65.55,
+      "type": "hihat",
+      "velocity": 0.36419163181165515
+    },
+    {
+      "time": 66.18,
+      "type": "kick",
+      "velocity": 0.9464143254953473
+    },
+    {
+      "time": 66.18,
+      "type": "snare",
+      "velocity": 0.7231414248916965
+    },
+    {
+      "time": 66.18,
+      "type": "hihat",
+      "velocity": 0.5270707166140387
+    },
+    {
+      "time": 66.42,
+      "type": "snare",
+      "velocity": 0.43426566598215716
+    },
+    {
+      "time": 66.5,
+      "type": "snare",
+      "velocity": 0.9349720288573193
+    },
+    {
+      "time": 66.5,
+      "type": "hihat",
+      "velocity": 0.4773125395129912
+    },
+    {
+      "time": 66.82,
+      "type": "snare",
+      "velocity": 0.7098789538113448
+    },
+    {
+      "time": 66.82,
+      "type": "hihat",
+      "velocity": 0.43325250490473227
+    },
+    {
+      "time": 67.13,
+      "type": "kick",
+      "velocity": 0.9861747262775196
+    },
+    {
+      "time": 67.13,
+      "type": "hihat",
+      "velocity": 0.8704710591552816
+    },
+    {
+      "time": 67.45,
+      "type": "snare",
+      "velocity": 0.887747271434693
+    },
+    {
+      "time": 67.45,
+      "type": "hihat",
+      "velocity": 0.41007268096263355
+    },
+    {
+      "time": 67.84,
+      "type": "tom",
+      "velocity": 0.5085927730298822
+    },
+    {
+      "time": 67.92,
+      "type": "kick",
+      "velocity": 0.9234028770595142
+    },
+    {
+      "time": 67.92,
+      "type": "hihat",
+      "velocity": 0.7538472236071313
+    },
+    {
+      "time": 68.08,
+      "type": "snare",
+      "velocity": 0.9096907583980474
+    },
+    {
+      "time": 68.08,
+      "type": "hihat",
+      "velocity": 0.389401978410583
+    },
+    {
+      "time": 68.39,
+      "type": "kick",
+      "velocity": 0.8316292758444447
+    },
+    {
+      "time": 68.39,
+      "type": "tom",
+      "velocity": 0.45990045715032385
+    },
+    {
+      "time": 68.39,
+      "type": "hihat",
+      "velocity": 0.3707115540493776
+    },
+    {
+      "time": 69.02,
+      "type": "kick",
+      "velocity": 0.9011084220000063
+    },
+    {
+      "time": 69.02,
+      "type": "snare",
+      "velocity": 0.35223687393214353
+    },
+    {
+      "time": 69.02,
+      "type": "hihat",
+      "velocity": 0.439585666362141
+    },
+    {
+      "time": 69.1,
+      "type": "snare",
+      "velocity": 0.6041734507466263
+    },
+    {
+      "time": 69.34,
+      "type": "snare",
+      "velocity": 0.8139134971886686
+    },
+    {
+      "time": 69.34,
+      "type": "hihat",
+      "velocity": 0.4073190903573858
+    },
+    {
+      "time": 69.66,
+      "type": "kick",
+      "velocity": 0.8398925033382681
+    },
+    {
+      "time": 69.66,
+      "type": "hihat",
+      "velocity": 0.5928139363091456
+    },
+    {
+      "time": 69.81,
+      "type": "kick",
+      "velocity": 0.786191088848307
+    },
+    {
+      "time": 69.81,
+      "type": "hihat",
+      "velocity": 0.6376793687046188
+    },
+    {
+      "time": 69.97,
+      "type": "kick",
+      "velocity": 0.887724007116038
+    },
+    {
+      "time": 69.97,
+      "type": "hihat",
+      "velocity": 0.6401862929090163
+    },
+    {
+      "time": 70.13,
+      "type": "kick",
+      "velocity": 0.8151530976343354
+    },
+    {
+      "time": 70.13,
+      "type": "hihat",
+      "velocity": 0.8134033623790505
+    },
+    {
+      "time": 70.29,
+      "type": "kick",
+      "velocity": 0.8155204153766548
+    },
+    {
+      "time": 70.29,
+      "type": "hihat",
+      "velocity": 0.7368377755149638
+    },
+    {
+      "time": 70.37,
+      "type": "kick",
+      "velocity": 0.8112712521974279
+    },
+    {
+      "time": 70.37,
+      "type": "hihat",
+      "velocity": 0.6272912688171987
+    },
+    {
+      "time": 70.45,
+      "type": "kick",
+      "velocity": 0.8664362508232175
+    },
+    {
+      "time": 70.45,
+      "type": "hihat",
+      "velocity": 0.7070411592971875
+    },
+    {
+      "time": 70.52,
+      "type": "kick",
+      "velocity": 0.8543633619034244
+    },
+    {
+      "time": 70.52,
+      "type": "hihat",
+      "velocity": 0.5673166308019191
+    },
+    {
+      "time": 70.6,
+      "type": "kick",
+      "velocity": 0.8272176501732771
+    },
+    {
+      "time": 70.6,
+      "type": "hihat",
+      "velocity": 0.6151807692489134
+    },
+    {
+      "time": 70.68,
+      "type": "kick",
+      "velocity": 0.8906468456395008
+    },
+    {
+      "time": 70.68,
+      "type": "hihat",
+      "velocity": 0.7339186851317286
+    },
+    {
+      "time": 70.76,
+      "type": "kick",
+      "velocity": 0.8782485793740747
+    },
+    {
+      "time": 70.76,
+      "type": "hihat",
+      "velocity": 0.7174836072179099
+    },
+    {
+      "time": 70.84,
+      "type": "kick",
+      "velocity": 0.847478674536124
+    },
+    {
+      "time": 70.84,
+      "type": "hihat",
+      "velocity": 0.47802920977377966
+    },
+    {
+      "time": 70.92,
+      "type": "kick",
+      "velocity": 0.9172448765346453
+    },
+    {
+      "time": 70.92,
+      "type": "snare",
+      "velocity": 0.761179167500574
+    },
+    {
+      "time": 70.92,
+      "type": "cymbal",
+      "velocity": 0.6132030436708096
+    },
+    {
+      "time": 71.24,
+      "type": "hihat",
+      "velocity": 0.390372423614033
+    },
+    {
+      "time": 71.39,
+      "type": "hihat",
+      "velocity": 0.4752532595733802
+    },
+    {
+      "time": 71.55,
+      "type": "hihat",
+      "velocity": 0.6653228076077682
+    },
+    {
+      "time": 71.88,
+      "type": "kick",
+      "velocity": 0.5844692837000296
+    },
+    {
+      "time": 72.18,
+      "type": "kick",
+      "velocity": 0.9424237193687278
+    },
+    {
+      "time": 72.18,
+      "type": "snare",
+      "velocity": 0.8123916876330953
+    },
+    {
+      "time": 72.18,
+      "type": "hihat",
+      "velocity": 0.6454470662110909
+    },
+    {
+      "time": 72.42,
+      "type": "hihat",
+      "velocity": 0.4693627987130437
+    },
+    {
+      "time": 72.65,
+      "type": "hihat",
+      "velocity": 0.5602508694877539
+    },
+    {
+      "time": 72.66,
+      "type": "kick",
+      "velocity": 0.3023265417247817
+    },
+    {
+      "time": 72.81,
+      "type": "hihat",
+      "velocity": 0.3749787793871157
+    },
+    {
+      "time": 72.89,
+      "type": "hihat",
+      "velocity": 0.5286190539551894
+    },
+    {
+      "time": 72.97,
+      "type": "hihat",
+      "velocity": 0.5965760351280872
+    },
+    {
+      "time": 73.13,
+      "type": "hihat",
+      "velocity": 0.33628966816745215
+    },
+    {
+      "time": 73.29,
+      "type": "snare",
+      "velocity": 0.4395624666665934
+    },
+    {
+      "time": 73.29,
+      "type": "hihat",
+      "velocity": 0.6628657724422642
+    },
+    {
+      "time": 73.44,
+      "type": "kick",
+      "velocity": 0.7276187722630644
+    },
+    {
+      "time": 73.76,
+      "type": "hihat",
+      "velocity": 0.505224035065532
+    },
+    {
+      "time": 74.08,
+      "type": "kick",
+      "velocity": 0.7824892187654389
+    },
+    {
+      "time": 74.08,
+      "type": "hihat",
+      "velocity": 0.6536994370228755
+    },
+    {
+      "time": 74.39,
+      "type": "kick",
+      "velocity": 0.38677323964878374
+    },
+    {
+      "time": 74.39,
+      "type": "snare",
+      "velocity": 0.6871784717682
+    },
+    {
+      "time": 74.39,
+      "type": "hihat",
+      "velocity": 0.7027124450727821
+    },
+    {
+      "time": 74.71,
+      "type": "kick",
+      "velocity": 0.8988051898300548
+    },
+    {
+      "time": 74.71,
+      "type": "snare",
+      "velocity": 0.8659653422397761
+    },
+    {
+      "time": 74.71,
+      "type": "hihat",
+      "velocity": 0.5831863211493141
+    },
+    {
+      "time": 74.87,
+      "type": "hihat",
+      "velocity": 0.46319381225992107
+    },
+    {
+      "time": 75.18,
+      "type": "hihat",
+      "velocity": 0.5966814354162158
+    },
+    {
+      "time": 75.33,
+      "type": "hihat",
+      "velocity": 0.5480750359579125
+    },
+    {
+      "time": 75.42,
+      "type": "hihat",
+      "velocity": 0.4630136430365597
+    },
+    {
+      "time": 75.5,
+      "type": "hihat",
+      "velocity": 0.6795443502246719
+    },
+    {
+      "time": 75.66,
+      "type": "hihat",
+      "velocity": 0.468291412215874
+    },
+    {
+      "time": 75.81,
+      "type": "snare",
+      "velocity": 0.3170923401519974
+    },
+    {
+      "time": 75.81,
+      "type": "hihat",
+      "velocity": 0.7147406148022717
+    },
+    {
+      "time": 75.97,
+      "type": "kick",
+      "velocity": 0.9198931960979791
+    },
+    {
+      "time": 75.97,
+      "type": "hihat",
+      "velocity": 0.8331077232949693
+    },
+    {
+      "time": 76.29,
+      "type": "hihat",
+      "velocity": 0.6305085302178619
+    },
+    {
+      "time": 76.45,
+      "type": "hihat",
+      "velocity": 0.6107945404589442
+    },
+    {
+      "time": 76.6,
+      "type": "kick",
+      "velocity": 0.6925736611336146
+    },
+    {
+      "time": 76.6,
+      "type": "snare",
+      "velocity": 0.3823601276461466
+    },
+    {
+      "time": 76.6,
+      "type": "hihat",
+      "velocity": 0.5035962436138637
+    },
+    {
+      "time": 76.76,
+      "type": "hihat",
+      "velocity": 0.40544967310724245
+    },
+    {
+      "time": 76.92,
+      "type": "snare",
+      "velocity": 0.8623233777774446
+    },
+    {
+      "time": 76.92,
+      "type": "hihat",
+      "velocity": 0.6861297033586115
+    },
+    {
+      "time": 77.08,
+      "type": "hihat",
+      "velocity": 0.47400163922974164
+    },
+    {
+      "time": 77.24,
+      "type": "kick",
+      "velocity": 0.951995306294465
+    },
+    {
+      "time": 77.24,
+      "type": "snare",
+      "velocity": 0.6753341547791921
+    },
+    {
+      "time": 77.24,
+      "type": "hihat",
+      "velocity": 0.5964768386582666
+    },
+    {
+      "time": 77.4,
+      "type": "hihat",
+      "velocity": 0.6691812594798059
+    },
+    {
+      "time": 77.71,
+      "type": "hihat",
+      "velocity": 0.5682400950063075
+    },
+    {
+      "time": 77.87,
+      "type": "hihat",
+      "velocity": 0.5754149401257216
+    },
+    {
+      "time": 77.95,
+      "type": "hihat",
+      "velocity": 0.5012319426074429
+    },
+    {
+      "time": 78.02,
+      "type": "hihat",
+      "velocity": 0.7723707264819871
+    },
+    {
+      "time": 78.18,
+      "type": "kick",
+      "velocity": 0.7906469167249189
+    },
+    {
+      "time": 78.18,
+      "type": "hihat",
+      "velocity": 0.4368324634955375
+    },
+    {
+      "time": 78.34,
+      "type": "kick",
+      "velocity": 0.5986540557688369
+    },
+    {
+      "time": 78.34,
+      "type": "hihat",
+      "velocity": 0.7217829179284597
+    },
+    {
+      "time": 78.5,
+      "type": "kick",
+      "velocity": 0.9729525153930626
+    },
+    {
+      "time": 78.5,
+      "type": "snare",
+      "velocity": 0.760988400087603
+    },
+    {
+      "time": 78.66,
+      "type": "hihat",
+      "velocity": 0.7604003944335981
+    },
+    {
+      "time": 78.81,
+      "type": "hihat",
+      "velocity": 0.5210676499891013
+    },
+    {
+      "time": 78.97,
+      "type": "hihat",
+      "velocity": 0.6443940326764157
+    },
+    {
+      "time": 79.05,
+      "type": "hihat",
+      "velocity": 0.5497679028787074
+    },
+    {
+      "time": 79.13,
+      "type": "hihat",
+      "velocity": 0.5244919315142402
+    },
+    {
+      "time": 79.21,
+      "type": "hihat",
+      "velocity": 0.6098540803773161
+    },
+    {
+      "time": 79.29,
+      "type": "hihat",
+      "velocity": 0.7075890986246199
+    },
+    {
+      "time": 79.37,
+      "type": "tom",
+      "velocity": 0.5379116306148352
+    },
+    {
+      "time": 79.45,
+      "type": "kick",
+      "velocity": 0.8872487041612951
+    },
+    {
+      "time": 79.45,
+      "type": "hihat",
+      "velocity": 0.5704967339158417
+    },
+    {
+      "time": 79.6,
+      "type": "kick",
+      "velocity": 0.31839320330345566
+    },
+    {
+      "time": 79.6,
+      "type": "hihat",
+      "velocity": 0.6781017685987403
+    },
+    {
+      "time": 79.76,
+      "type": "kick",
+      "velocity": 0.91819477158995
+    },
+    {
+      "time": 79.76,
+      "type": "snare",
+      "velocity": 0.728387851863934
+    },
+    {
+      "time": 79.76,
+      "type": "hihat",
+      "velocity": 0.4624280284375276
+    },
+    {
+      "time": 79.92,
+      "type": "hihat",
+      "velocity": 0.7909444415112734
+    },
+    {
+      "time": 80.08,
+      "type": "kick",
+      "velocity": 0.8733939623018517
+    },
+    {
+      "time": 80.08,
+      "type": "hihat",
+      "velocity": 0.6955702346225923
+    },
+    {
+      "time": 80.23,
+      "type": "hihat",
+      "velocity": 0.7096189104272679
+    },
+    {
+      "time": 80.24,
+      "type": "kick",
+      "velocity": 0.5561943477916119
+    },
+    {
+      "time": 80.39,
+      "type": "snare",
+      "velocity": 0.6096181414122902
+    },
+    {
+      "time": 80.39,
+      "type": "hihat",
+      "velocity": 0.41299257913471077
+    },
+    {
+      "time": 80.4,
+      "type": "kick",
+      "velocity": 0.8220748140421618
+    },
+    {
+      "time": 80.55,
+      "type": "hihat",
+      "velocity": 0.7585558570797942
+    },
+    {
+      "time": 80.71,
+      "type": "kick",
+      "velocity": 0.8515749394433016
+    },
+    {
+      "time": 80.71,
+      "type": "snare",
+      "velocity": 0.39907618683083174
+    },
+    {
+      "time": 80.71,
+      "type": "hihat",
+      "velocity": 0.5700404947777743
+    },
+    {
+      "time": 80.87,
+      "type": "kick",
+      "velocity": 0.42741480881156746
+    },
+    {
+      "time": 80.87,
+      "type": "hihat",
+      "velocity": 0.7754037474035242
+    },
+    {
+      "time": 81.03,
+      "type": "kick",
+      "velocity": 0.9200988268256464
+    },
+    {
+      "time": 81.03,
+      "type": "snare",
+      "velocity": 0.504547528065977
+    },
+    {
+      "time": 81.03,
+      "type": "hihat",
+      "velocity": 0.6070949321848342
+    },
+    {
+      "time": 81.18,
+      "type": "hihat",
+      "velocity": 0.7215679814733306
+    },
+    {
+      "time": 81.26,
+      "type": "snare",
+      "velocity": 0.3703059794274922
+    },
+    {
+      "time": 81.34,
+      "type": "kick",
+      "velocity": 0.866187645729146
+    },
+    {
+      "time": 81.34,
+      "type": "snare",
+      "velocity": 0.739845141062873
+    },
+    {
+      "time": 81.5,
+      "type": "hihat",
+      "velocity": 0.7765421480630419
+    },
+    {
+      "time": 81.66,
+      "type": "kick",
+      "velocity": 0.9585221755162303
+    },
+    {
+      "time": 81.66,
+      "type": "snare",
+      "velocity": 0.34843713215315597
+    },
+    {
+      "time": 81.66,
+      "type": "hihat",
+      "velocity": 0.6436067939823737
+    },
+    {
+      "time": 81.81,
+      "type": "hihat",
+      "velocity": 0.6959310900541742
+    },
+    {
+      "time": 81.89,
+      "type": "snare",
+      "velocity": 0.654831116879226
+    },
+    {
+      "time": 81.97,
+      "type": "kick",
+      "velocity": 0.9002043447278304
+    },
+    {
+      "time": 81.97,
+      "type": "snare",
+      "velocity": 0.5961803478416302
+    },
+    {
+      "time": 81.97,
+      "type": "hihat",
+      "velocity": 0.46658413434213447
+    },
+    {
+      "time": 82.13,
+      "type": "hihat",
+      "velocity": 0.7885950684426561
+    },
+    {
+      "time": 82.29,
+      "type": "kick",
+      "velocity": 0.9808116545964704
+    },
+    {
+      "time": 82.29,
+      "type": "snare",
+      "velocity": 0.8125134375673897
+    },
+    {
+      "time": 82.29,
+      "type": "hihat",
+      "velocity": 0.6506408899739252
+    },
+    {
+      "time": 82.45,
+      "type": "hihat",
+      "velocity": 0.6385032487005423
+    },
+    {
+      "time": 82.52,
+      "type": "tom",
+      "velocity": 0.5774963857911622
+    },
+    {
+      "time": 82.6,
+      "type": "snare",
+      "velocity": 0.41433486569799644
+    },
+    {
+      "time": 82.76,
+      "type": "tom",
+      "velocity": 0.8155462646196048
+    },
+    {
+      "time": 82.92,
+      "type": "snare",
+      "velocity": 0.5402351867520562
+    },
+    {
+      "time": 82.92,
+      "type": "tom",
+      "velocity": 0.46990340331778907
+    },
+    {
+      "time": 83.0,
+      "type": "tom",
+      "velocity": 0.7908425954940504
+    },
+    {
+      "time": 83.08,
+      "type": "tom",
+      "velocity": 0.6416034776537495
+    },
+    {
+      "time": 83.08,
+      "type": "hihat",
+      "velocity": 0.5013426743019298
+    },
+    {
+      "time": 83.15,
+      "type": "tom",
+      "velocity": 0.5845366209779143
+    },
+    {
+      "time": 83.24,
+      "type": "snare",
+      "velocity": 0.37426595420121606
+    },
+    {
+      "time": 83.24,
+      "type": "hihat",
+      "velocity": 0.30921743291039017
+    },
+    {
+      "time": 83.39,
+      "type": "tom",
+      "velocity": 0.7576298079511108
+    },
+    {
+      "time": 83.55,
+      "type": "kick",
+      "velocity": 0.9347548952165394
+    },
+    {
+      "time": 83.55,
+      "type": "snare",
+      "velocity": 0.4813156825224415
+    },
+    {
+      "time": 83.55,
+      "type": "hihat",
+      "velocity": 0.28858857382036496
+    },
+    {
+      "time": 83.55,
+      "type": "cymbal",
+      "velocity": 0.48527032588980684
+    },
+    {
+      "time": 83.71,
+      "type": "hihat",
+      "velocity": 0.6182731141830208
+    },
+    {
+      "time": 83.79,
+      "type": "tom",
+      "velocity": 0.689992937340595
+    },
+    {
+      "time": 83.87,
+      "type": "snare",
+      "velocity": 0.5882463750798822
+    },
+    {
+      "time": 84.02,
+      "type": "tom",
+      "velocity": 0.7003949311961006
+    },
+    {
+      "time": 84.02,
+      "type": "hihat",
+      "velocity": 0.40780460376309396
+    },
+    {
+      "time": 84.18,
+      "type": "snare",
+      "velocity": 0.3304903258885144
+    },
+    {
+      "time": 84.18,
+      "type": "tom",
+      "velocity": 0.5200288981611559
+    },
+    {
+      "time": 84.26,
+      "type": "tom",
+      "velocity": 0.6113451939568864
+    },
+    {
+      "time": 84.26,
+      "type": "hihat",
+      "velocity": 0.42247055948941536
+    },
+    {
+      "time": 84.34,
+      "type": "tom",
+      "velocity": 0.6259723758187828
+    },
+    {
+      "time": 84.34,
+      "type": "hihat",
+      "velocity": 0.7373835176567454
+    },
+    {
+      "time": 84.42,
+      "type": "tom",
+      "velocity": 0.5898120637253631
+    },
+    {
+      "time": 84.5,
+      "type": "snare",
+      "velocity": 0.8391235529836133
+    },
+    {
+      "time": 84.65,
+      "type": "snare",
+      "velocity": 0.3403084176573335
+    },
+    {
+      "time": 84.65,
+      "type": "hihat",
+      "velocity": 0.5170247637686154
+    },
+    {
+      "time": 84.82,
+      "type": "kick",
+      "velocity": 0.8990955414514905
+    },
+    {
+      "time": 84.82,
+      "type": "snare",
+      "velocity": 0.4973470275729351
+    },
+    {
+      "time": 84.97,
+      "type": "hihat",
+      "velocity": 0.6725477356353979
+    },
+    {
+      "time": 85.05,
+      "type": "tom",
+      "velocity": 0.6506390159038113
+    },
+    {
+      "time": 85.13,
+      "type": "snare",
+      "velocity": 0.7085547617181241
+    },
+    {
+      "time": 85.29,
+      "type": "tom",
+      "velocity": 0.7682732337357694
+    },
+    {
+      "time": 85.29,
+      "type": "hihat",
+      "velocity": 0.3148273325500582
+    },
+    {
+      "time": 85.45,
+      "type": "snare",
+      "velocity": 0.5593511865868795
+    },
+    {
+      "time": 85.45,
+      "type": "hihat",
+      "velocity": 0.31586863699074486
+    },
+    {
+      "time": 85.6,
+      "type": "hihat",
+      "velocity": 0.44206325167579025
+    },
+    {
+      "time": 85.68,
+      "type": "snare",
+      "velocity": 0.7686869508691839
+    },
+    {
+      "time": 85.76,
+      "type": "snare",
+      "velocity": 0.5758612919283606
+    },
+    {
+      "time": 85.92,
+      "type": "tom",
+      "velocity": 0.614331750864221
+    },
+    {
+      "time": 85.92,
+      "type": "hihat",
+      "velocity": 0.461065062479882
+    },
+    {
+      "time": 86.08,
+      "type": "kick",
+      "velocity": 0.9279949304464726
+    },
+    {
+      "time": 86.08,
+      "type": "snare",
+      "velocity": 0.4979793969901529
+    },
+    {
+      "time": 86.08,
+      "type": "hihat",
+      "velocity": 0.4317720864494326
+    },
+    {
+      "time": 86.24,
+      "type": "hihat",
+      "velocity": 0.7153365044753763
+    },
+    {
+      "time": 86.39,
+      "type": "snare",
+      "velocity": 0.4607011374506998
+    },
+    {
+      "time": 86.39,
+      "type": "hihat",
+      "velocity": 0.5856182179260493
+    },
+    {
+      "time": 86.55,
+      "type": "tom",
+      "velocity": 0.6774641970213787
+    },
+    {
+      "time": 86.55,
+      "type": "hihat",
+      "velocity": 0.5815748147207044
+    },
+    {
+      "time": 86.63,
+      "type": "hihat",
+      "velocity": 0.6012427282040637
+    },
+    {
+      "time": 86.71,
+      "type": "kick",
+      "velocity": 0.9696137625505344
+    },
+    {
+      "time": 86.71,
+      "type": "snare",
+      "velocity": 0.7049675976508466
+    },
+    {
+      "time": 86.87,
+      "type": "hihat",
+      "velocity": 0.8263873078666161
+    },
+    {
+      "time": 87.02,
+      "type": "hihat",
+      "velocity": 0.7513151610139649
+    },
+    {
+      "time": 87.1,
+      "type": "hihat",
+      "velocity": 0.5795987693433924
+    },
+    {
+      "time": 87.18,
+      "type": "hihat",
+      "velocity": 0.7380758250060535
+    },
+    {
+      "time": 87.26,
+      "type": "hihat",
+      "velocity": 0.5035032509623512
+    },
+    {
+      "time": 87.34,
+      "type": "kick",
+      "velocity": 0.9373793042301446
+    },
+    {
+      "time": 87.34,
+      "type": "snare",
+      "velocity": 0.8079377338265972
+    },
+    {
+      "time": 87.34,
+      "type": "hihat",
+      "velocity": 0.5882954886414872
+    },
+    {
+      "time": 87.5,
+      "type": "snare",
+      "velocity": 0.5834518574975179
+    },
+    {
+      "time": 87.5,
+      "type": "hihat",
+      "velocity": 0.6909195034541373
+    },
+    {
+      "time": 87.58,
+      "type": "snare",
+      "velocity": 0.470441261440471
+    },
+    {
+      "time": 87.66,
+      "type": "kick",
+      "velocity": 0.9801634848294993
+    },
+    {
+      "time": 87.66,
+      "type": "snare",
+      "velocity": 0.8942657396524996
+    },
+    {
+      "time": 87.66,
+      "type": "hihat",
+      "velocity": 0.6022228022505126
+    },
+    {
+      "time": 87.81,
+      "type": "snare",
+      "velocity": 0.7090985651666846
+    },
+    {
+      "time": 87.81,
+      "type": "hihat",
+      "velocity": 0.6411708905729814
+    },
+    {
+      "time": 87.97,
+      "type": "kick",
+      "velocity": 0.9193680041043427
+    },
+    {
+      "time": 87.97,
+      "type": "snare",
+      "velocity": 0.8448057981919875
+    },
+    {
+      "time": 87.97,
+      "type": "hihat",
+      "velocity": 0.47896459694147875
+    },
+    {
+      "time": 88.13,
+      "type": "snare",
+      "velocity": 0.6823731621269041
+    },
+    {
+      "time": 88.13,
+      "type": "hihat",
+      "velocity": 0.5670883819866707
+    },
+    {
+      "time": 88.29,
+      "type": "kick",
+      "velocity": 0.9884599286005136
+    },
+    {
+      "time": 88.29,
+      "type": "hihat",
+      "velocity": 0.8439125129787433
+    },
+    {
+      "time": 88.44,
+      "type": "snare",
+      "velocity": 0.5715035619287439
+    },
+    {
+      "time": 88.44,
+      "type": "hihat",
+      "velocity": 0.6980466567203087
+    },
+    {
+      "time": 88.6,
+      "type": "hihat",
+      "velocity": 0.5493090141932376
+    },
+    {
+      "time": 88.61,
+      "type": "kick",
+      "velocity": 0.8567461451185546
+    },
+    {
+      "time": 88.61,
+      "type": "snare",
+      "velocity": 0.8604753507758424
+    },
+    {
+      "time": 88.68,
+      "type": "kick",
+      "velocity": 0.7185434908019669
+    },
+    {
+      "time": 88.76,
+      "type": "snare",
+      "velocity": 0.750497937198101
+    },
+    {
+      "time": 88.76,
+      "type": "hihat",
+      "velocity": 0.7883463987254772
+    },
+    {
+      "time": 88.84,
+      "type": "snare",
+      "velocity": 0.7509265822693192
+    },
+    {
+      "time": 88.92,
+      "type": "kick",
+      "velocity": 0.9723203075336132
+    },
+    {
+      "time": 88.92,
+      "type": "snare",
+      "velocity": 0.9055968845458426
+    },
+    {
+      "time": 88.92,
+      "type": "hihat",
+      "velocity": 0.7048763498232331
+    },
+    {
+      "time": 89.08,
+      "type": "snare",
+      "velocity": 0.9178475516340243
+    },
+    {
+      "time": 89.08,
+      "type": "hihat",
+      "velocity": 0.8076172678371246
+    },
+    {
+      "time": 89.24,
+      "type": "kick",
+      "velocity": 0.9644256902442565
+    },
+    {
+      "time": 89.24,
+      "type": "snare",
+      "velocity": 0.9036185127366652
+    },
+    {
+      "time": 89.24,
+      "type": "hihat",
+      "velocity": 0.5077266295217353
+    },
+    {
+      "time": 89.39,
+      "type": "snare",
+      "velocity": 0.8109875567560518
+    },
+    {
+      "time": 89.39,
+      "type": "hihat",
+      "velocity": 0.7567188160064457
+    },
+    {
+      "time": 89.55,
+      "type": "kick",
+      "velocity": 0.9402176803522683
+    },
+    {
+      "time": 89.55,
+      "type": "snare",
+      "velocity": 0.8228230850024566
+    },
+    {
+      "time": 89.55,
+      "type": "hihat",
+      "velocity": 0.751845975217943
+    },
+    {
+      "time": 89.63,
+      "type": "kick",
+      "velocity": 0.7021927460432725
+    },
+    {
+      "time": 89.71,
+      "type": "snare",
+      "velocity": 0.8845305916419962
+    },
+    {
+      "time": 89.71,
+      "type": "hihat",
+      "velocity": 0.7641440756669379
+    },
+    {
+      "time": 89.87,
+      "type": "kick",
+      "velocity": 0.9807405691783578
+    },
+    {
+      "time": 89.87,
+      "type": "snare",
+      "velocity": 0.9721723206177245
+    },
+    {
+      "time": 89.87,
+      "type": "hihat",
+      "velocity": 0.7804157217422053
+    },
+    {
+      "time": 90.03,
+      "type": "kick",
+      "velocity": 0.9275125189499184
+    },
+    {
+      "time": 90.03,
+      "type": "snare",
+      "velocity": 0.9120610047303468
+    },
+    {
+      "time": 90.03,
+      "type": "hihat",
+      "velocity": 0.8164326997834673
+    },
+    {
+      "time": 90.11,
+      "type": "kick",
+      "velocity": 0.6445849293356014
+    },
+    {
+      "time": 90.18,
+      "type": "kick",
+      "velocity": 0.9478360984807043
+    },
+    {
+      "time": 90.18,
+      "type": "snare",
+      "velocity": 0.9304114469236524
+    },
+    {
+      "time": 90.18,
+      "type": "hihat",
+      "velocity": 0.7686406161011962
+    },
+    {
+      "time": 90.26,
+      "type": "kick",
+      "velocity": 0.6457252040652328
+    },
+    {
+      "time": 90.34,
+      "type": "kick",
+      "velocity": 0.9907707216740279
+    },
+    {
+      "time": 90.34,
+      "type": "snare",
+      "velocity": 0.9544155062887654
+    },
+    {
+      "time": 90.34,
+      "type": "hihat",
+      "velocity": 0.8080411307983971
+    },
+    {
+      "time": 90.5,
+      "type": "kick",
+      "velocity": 0.9845405371382212
+    },
+    {
+      "time": 90.5,
+      "type": "snare",
+      "velocity": 0.9544629396495785
+    },
+    {
+      "time": 90.5,
+      "type": "hihat",
+      "velocity": 0.7555217375654316
+    },
+    {
+      "time": 90.66,
+      "type": "kick",
+      "velocity": 0.9907888807672003
+    },
+    {
+      "time": 90.66,
+      "type": "snare",
+      "velocity": 0.986421069562833
+    },
+    {
+      "time": 90.66,
+      "type": "hihat",
+      "velocity": 0.9067813614809186
+    },
+    {
+      "time": 90.74,
+      "type": "kick",
+      "velocity": 0.711974616560408
+    },
+    {
+      "time": 90.81,
+      "type": "hihat",
+      "velocity": 0.546343976780659
+    },
+    {
+      "time": 90.82,
+      "type": "kick",
+      "velocity": 0.9399204140583434
+    },
+    {
+      "time": 90.82,
+      "type": "snare",
+      "velocity": 0.9157228084866424
+    },
+    {
+      "time": 90.97,
+      "type": "kick",
+      "velocity": 0.9522308575208469
+    },
+    {
+      "time": 90.97,
+      "type": "snare",
+      "velocity": 0.9040840576021945
+    },
+    {
+      "time": 90.97,
+      "type": "hihat",
+      "velocity": 0.7901306427201003
+    },
+    {
+      "time": 91.05,
+      "type": "kick",
+      "velocity": 0.5636201244369631
+    },
+    {
+      "time": 91.13,
+      "type": "kick",
+      "velocity": 0.9452647450382539
+    },
+    {
+      "time": 91.13,
+      "type": "snare",
+      "velocity": 0.9468669457394017
+    },
+    {
+      "time": 91.13,
+      "type": "hihat",
+      "velocity": 0.6876962967275957
+    },
+    {
+      "time": 91.21,
+      "type": "kick",
+      "velocity": 0.9332867874631947
+    },
+    {
+      "time": 91.21,
+      "type": "snare",
+      "velocity": 0.7759159501525783
+    },
+    {
+      "time": 91.21,
+      "type": "hihat",
+      "velocity": 0.6229946076540512
+    },
+    {
+      "time": 91.29,
+      "type": "kick",
+      "velocity": 0.9516479570923246
+    },
+    {
+      "time": 91.29,
+      "type": "snare",
+      "velocity": 0.9405652880468383
+    },
+    {
+      "time": 91.29,
+      "type": "hihat",
+      "velocity": 0.790593150299583
+    },
+    {
+      "time": 91.37,
+      "type": "kick",
+      "velocity": 0.8357716170271806
+    },
+    {
+      "time": 91.37,
+      "type": "snare",
+      "velocity": 0.9152535801039927
+    },
+    {
+      "time": 91.37,
+      "type": "hihat",
+      "velocity": 0.5850729281460192
+    },
+    {
+      "time": 91.45,
+      "type": "kick",
+      "velocity": 0.9672658111902794
+    },
+    {
+      "time": 91.45,
+      "type": "snare",
+      "velocity": 0.9472148765495085
+    },
+    {
+      "time": 91.45,
+      "type": "hihat",
+      "velocity": 0.7764478629493817
+    },
+    {
+      "time": 91.53,
+      "type": "snare",
+      "velocity": 0.8477829847487527
+    },
+    {
+      "time": 91.6,
+      "type": "kick",
+      "velocity": 0.7506883168724277
+    },
+    {
+      "time": 91.6,
+      "type": "hihat",
+      "velocity": 0.5477492708736352
+    },
+    {
+      "time": 91.61,
+      "type": "snare",
+      "velocity": 0.840959430841029
+    },
+    {
+      "time": 91.69,
+      "type": "snare",
+      "velocity": 0.6422784660102812
+    },
+    {
+      "time": 91.76,
+      "type": "kick",
+      "velocity": 0.602584110043846
+    },
+    {
+      "time": 91.76,
+      "type": "snare",
+      "velocity": 0.8746669082709241
+    },
+    {
+      "time": 91.84,
+      "type": "kick",
+      "velocity": 0.8257893502540754
+    },
+    {
+      "time": 91.84,
+      "type": "snare",
+      "velocity": 0.8647449994801071
+    },
+    {
+      "time": 91.92,
+      "type": "snare",
+      "velocity": 0.8275611866120824
+    },
+    {
+      "time": 92.0,
+      "type": "tom",
+      "velocity": 0.48962950990933957
+    },
+    {
+      "time": 92.08,
+      "type": "kick",
+      "velocity": 0.7930918673693438
+    },
+    {
+      "time": 92.08,
+      "type": "snare",
+      "velocity": 0.7103948400775193
+    },
+    {
+      "time": 92.16,
+      "type": "snare",
+      "velocity": 0.6007185055570379
+    },
+    {
+      "time": 92.23,
+      "type": "snare",
+      "velocity": 0.7021136473598455
+    },
+    {
+      "time": 92.32,
+      "type": "tom",
+      "velocity": 0.6374407801921904
+    },
+    {
+      "time": 92.39,
+      "type": "kick",
+      "velocity": 0.7182704581733076
+    },
+    {
+      "time": 93.65,
+      "type": "hihat",
+      "velocity": 0.34273766488666624
+    },
+    {
+      "time": 93.66,
+      "type": "kick",
+      "velocity": 0.8534050012210536
+    },
+    {
+      "time": 93.66,
+      "type": "snare",
+      "velocity": 0.7266100701800483
+    },
+    {
+      "time": 93.97,
+      "type": "hihat",
+      "velocity": 0.35998734938050025
+    },
+    {
+      "time": 94.29,
+      "type": "kick",
+      "velocity": 0.4746041850829059
+    },
+    {
+      "time": 94.29,
+      "type": "hihat",
+      "velocity": 0.4077557486939185
+    },
+    {
+      "time": 94.6,
+      "type": "snare",
+      "velocity": 0.7983307334380184
+    },
+    {
+      "time": 94.6,
+      "type": "hihat",
+      "velocity": 0.32410317182489384
+    },
+    {
+      "time": 94.6,
+      "type": "cymbal",
+      "velocity": 0.4265678906778647
+    },
+    {
+      "time": 94.92,
+      "type": "kick",
+      "velocity": 0.9421918516594664
+    },
+    {
+      "time": 94.92,
+      "type": "snare",
+      "velocity": 0.6067206351469183
+    },
+    {
+      "time": 94.92,
+      "type": "hihat",
+      "velocity": 0.5811500470359287
+    },
+    {
+      "time": 95.08,
+      "type": "hihat",
+      "velocity": 0.5625506120099072
+    },
+    {
+      "time": 95.16,
+      "type": "snare",
+      "velocity": 0.6857124965773986
+    },
+    {
+      "time": 95.24,
+      "type": "kick",
+      "velocity": 0.8696372272008223
+    },
+    {
+      "time": 95.24,
+      "type": "hihat",
+      "velocity": 0.4026692639124341
+    },
+    {
+      "time": 95.39,
+      "type": "snare",
+      "velocity": 0.42102894721009443
+    },
+    {
+      "time": 95.39,
+      "type": "hihat",
+      "velocity": 0.7234993722834465
+    },
+    {
+      "time": 95.55,
+      "type": "kick",
+      "velocity": 0.8003635179036057
+    },
+    {
+      "time": 95.71,
+      "type": "hihat",
+      "velocity": 0.758858810207168
+    },
+    {
+      "time": 95.79,
+      "type": "snare",
+      "velocity": 0.4451984740416409
+    },
+    {
+      "time": 95.87,
+      "type": "kick",
+      "velocity": 0.9083172588738997
+    },
+    {
+      "time": 95.87,
+      "type": "hihat",
+      "velocity": 0.663994221143246
+    },
+    {
+      "time": 96.02,
+      "type": "hihat",
+      "velocity": 0.7481519245310673
+    },
+    {
+      "time": 96.19,
+      "type": "kick",
+      "velocity": 0.7187150005289401
+    },
+    {
+      "time": 96.34,
+      "type": "hihat",
+      "velocity": 0.6581648291193789
+    },
+    {
+      "time": 96.42,
+      "type": "snare",
+      "velocity": 0.6569820323850948
+    },
+    {
+      "time": 96.5,
+      "type": "kick",
+      "velocity": 0.9597922134454707
+    },
+    {
+      "time": 96.5,
+      "type": "hihat",
+      "velocity": 0.7199261668073619
+    },
+    {
+      "time": 96.65,
+      "type": "snare",
+      "velocity": 0.6961964971561632
+    },
+    {
+      "time": 96.65,
+      "type": "hihat",
+      "velocity": 0.6789641639666594
+    },
+    {
+      "time": 96.82,
+      "type": "kick",
+      "velocity": 0.8460866281801596
+    },
+    {
+      "time": 96.82,
+      "type": "hihat",
+      "velocity": 0.3206748190439903
+    },
+    {
+      "time": 96.97,
+      "type": "hihat",
+      "velocity": 0.7260725997960107
+    },
+    {
+      "time": 97.05,
+      "type": "snare",
+      "velocity": 0.39778026734708766
+    },
+    {
+      "time": 97.13,
+      "type": "kick",
+      "velocity": 0.9163950826726643
+    },
+    {
+      "time": 97.13,
+      "type": "hihat",
+      "velocity": 0.7079485969709469
+    },
+    {
+      "time": 97.29,
+      "type": "hihat",
+      "velocity": 0.7334019587651583
+    },
+    {
+      "time": 97.45,
+      "type": "kick",
+      "velocity": 0.9579795352836027
+    },
+    {
+      "time": 97.45,
+      "type": "snare",
+      "velocity": 0.41649576547395456
+    },
+    {
+      "time": 97.6,
+      "type": "hihat",
+      "velocity": 0.7284396149729413
+    },
+    {
+      "time": 97.76,
+      "type": "kick",
+      "velocity": 0.8798061255080264
+    },
+    {
+      "time": 97.76,
+      "type": "hihat",
+      "velocity": 0.40903186119525214
+    },
+    {
+      "time": 97.92,
+      "type": "snare",
+      "velocity": 0.4339537625544118
+    },
+    {
+      "time": 97.92,
+      "type": "hihat",
+      "velocity": 0.6867783901104415
+    },
+    {
+      "time": 98.08,
+      "type": "kick",
+      "velocity": 0.9600573620550302
+    },
+    {
+      "time": 98.08,
+      "type": "hihat",
+      "velocity": 0.4754352382437481
+    },
+    {
+      "time": 98.23,
+      "type": "hihat",
+      "velocity": 0.6580265356695965
+    },
+    {
+      "time": 98.4,
+      "type": "kick",
+      "velocity": 0.8434923335345912
+    },
+    {
+      "time": 98.55,
+      "type": "snare",
+      "velocity": 0.5181497551333527
+    },
+    {
+      "time": 98.55,
+      "type": "hihat",
+      "velocity": 0.7401528763001927
+    },
+    {
+      "time": 98.71,
+      "type": "kick",
+      "velocity": 0.9536455865874999
+    },
+    {
+      "time": 98.71,
+      "type": "hihat",
+      "velocity": 0.6294549796983276
+    },
+    {
+      "time": 98.87,
+      "type": "hihat",
+      "velocity": 0.7444834645947119
+    },
+    {
+      "time": 99.03,
+      "type": "kick",
+      "velocity": 0.9147996027746835
+    },
+    {
+      "time": 99.03,
+      "type": "hihat",
+      "velocity": 0.46581744579623774
+    },
+    {
+      "time": 99.18,
+      "type": "hihat",
+      "velocity": 0.7315342863389142
+    },
+    {
+      "time": 99.34,
+      "type": "kick",
+      "velocity": 0.8317910274822042
+    },
+    {
+      "time": 99.34,
+      "type": "hihat",
+      "velocity": 0.5452262555155014
+    },
+    {
+      "time": 99.5,
+      "type": "hihat",
+      "velocity": 0.628865293843531
+    },
+    {
+      "time": 99.66,
+      "type": "hihat",
+      "velocity": 0.33880525186823784
+    },
+    {
+      "time": 99.81,
+      "type": "hihat",
+      "velocity": 0.6554591242366961
+    },
+    {
+      "time": 99.97,
+      "type": "kick",
+      "velocity": 0.926063410390142
+    },
+    {
+      "time": 99.97,
+      "type": "snare",
+      "velocity": 0.792114055131653
+    },
+    {
+      "time": 99.97,
+      "type": "hihat",
+      "velocity": 0.4230536537872598
+    },
+    {
+      "time": 100.13,
+      "type": "hihat",
+      "velocity": 0.622986465142522
+    },
+    {
+      "time": 100.21,
+      "type": "snare",
+      "velocity": 0.6659522366736005
+    },
+    {
+      "time": 100.29,
+      "type": "kick",
+      "velocity": 0.9916536671900923
+    },
+    {
+      "time": 100.29,
+      "type": "hihat",
+      "velocity": 0.7801739666975155
+    },
+    {
+      "time": 100.45,
+      "type": "hihat",
+      "velocity": 0.6106486861055989
+    },
+    {
+      "time": 100.6,
+      "type": "kick",
+      "velocity": 0.8411995703080344
+    },
+    {
+      "time": 100.6,
+      "type": "snare",
+      "velocity": 0.4224271650728131
+    },
+    {
+      "time": 100.6,
+      "type": "hihat",
+      "velocity": 0.49715151036157207
+    },
+    {
+      "time": 100.76,
+      "type": "hihat",
+      "velocity": 0.7360997150056341
+    },
+    {
+      "time": 100.92,
+      "type": "kick",
+      "velocity": 0.8835381745820386
+    },
+    {
+      "time": 100.92,
+      "type": "hihat",
+      "velocity": 0.7383160937192736
+    },
+    {
+      "time": 101.08,
+      "type": "snare",
+      "velocity": 0.8108038332617847
+    },
+    {
+      "time": 101.08,
+      "type": "hihat",
+      "velocity": 0.659838244484854
+    },
+    {
+      "time": 101.24,
+      "type": "kick",
+      "velocity": 0.9313119699249227
+    },
+    {
+      "time": 101.24,
+      "type": "hihat",
+      "velocity": 0.6640615584211308
+    },
+    {
+      "time": 101.39,
+      "type": "hihat",
+      "velocity": 0.6793179754795373
+    },
+    {
+      "time": 101.47,
+      "type": "snare",
+      "velocity": 0.7328730186312942
+    },
+    {
+      "time": 101.55,
+      "type": "kick",
+      "velocity": 0.9424961618720952
+    },
+    {
+      "time": 101.55,
+      "type": "hihat",
+      "velocity": 0.7491266994827114
+    },
+    {
+      "time": 101.71,
+      "type": "hihat",
+      "velocity": 0.7666486088163624
+    },
+    {
+      "time": 101.87,
+      "type": "kick",
+      "velocity": 0.9932221992522977
+    },
+    {
+      "time": 101.87,
+      "type": "hihat",
+      "velocity": 0.7581145458795304
+    },
+    {
+      "time": 102.02,
+      "type": "hihat",
+      "velocity": 0.6356783141847526
+    },
+    {
+      "time": 102.18,
+      "type": "kick",
+      "velocity": 0.8453675668643983
+    },
+    {
+      "time": 102.18,
+      "type": "hihat",
+      "velocity": 0.43827624064895554
+    },
+    {
+      "time": 102.34,
+      "type": "hihat",
+      "velocity": 0.7695052732778733
+    },
+    {
+      "time": 102.5,
+      "type": "kick",
+      "velocity": 0.9895010068603244
+    },
+    {
+      "time": 102.5,
+      "type": "snare",
+      "velocity": 0.4101766272308462
+    },
+    {
+      "time": 102.5,
+      "type": "hihat",
+      "velocity": 0.5532868249445969
+    },
+    {
+      "time": 102.66,
+      "type": "hihat",
+      "velocity": 0.7017224836909048
+    },
+    {
+      "time": 102.73,
+      "type": "snare",
+      "velocity": 0.46820213539303546
+    },
+    {
+      "time": 102.81,
+      "type": "snare",
+      "velocity": 0.4416831385582106
+    },
+    {
+      "time": 102.81,
+      "type": "hihat",
+      "velocity": 0.41810468697826936
+    },
+    {
+      "time": 102.82,
+      "type": "kick",
+      "velocity": 0.8915710206980704
+    },
+    {
+      "time": 102.97,
+      "type": "hihat",
+      "velocity": 0.7710107331872808
+    },
+    {
+      "time": 103.13,
+      "type": "kick",
+      "velocity": 0.934071505856049
+    },
+    {
+      "time": 103.13,
+      "type": "hihat",
+      "velocity": 0.4576735125586285
+    },
+    {
+      "time": 103.29,
+      "type": "hihat",
+      "velocity": 0.7201807818504193
+    },
+    {
+      "time": 103.37,
+      "type": "snare",
+      "velocity": 0.618909781036879
+    },
+    {
+      "time": 103.45,
+      "type": "kick",
+      "velocity": 0.9225247782765029
+    },
+    {
+      "time": 103.45,
+      "type": "hihat",
+      "velocity": 0.5453865208217914
+    },
+    {
+      "time": 103.61,
+      "type": "kick",
+      "velocity": 0.7436446566609848
+    },
+    {
+      "time": 103.61,
+      "type": "hihat",
+      "velocity": 0.5408281360737752
+    },
+    {
+      "time": 103.92,
+      "type": "kick",
+      "velocity": 0.9647029233748952
+    },
+    {
+      "time": 103.92,
+      "type": "hihat",
+      "velocity": 0.5869661266996765
+    },
+    {
+      "time": 104.23,
+      "type": "snare",
+      "velocity": 0.3548193102375086
+    },
+    {
+      "time": 104.23,
+      "type": "hihat",
+      "velocity": 0.37672395871333064
+    },
+    {
+      "time": 104.24,
+      "type": "kick",
+      "velocity": 0.8985160014245517
+    },
+    {
+      "time": 104.55,
+      "type": "kick",
+      "velocity": 0.9402080515092693
+    },
+    {
+      "time": 104.55,
+      "type": "snare",
+      "velocity": 0.4672310762700654
+    },
+    {
+      "time": 104.55,
+      "type": "hihat",
+      "velocity": 0.3942170784526462
+    },
+    {
+      "time": 104.55,
+      "type": "cymbal",
+      "velocity": 0.5158641327601609
+    },
+    {
+      "time": 104.86,
+      "type": "hihat",
+      "velocity": 0.6612879992757041
+    },
+    {
+      "time": 104.87,
+      "type": "snare",
+      "velocity": 0.3486552028289928
+    },
+    {
+      "time": 105.02,
+      "type": "hihat",
+      "velocity": 0.5712224514116626
+    },
+    {
+      "time": 105.03,
+      "type": "kick",
+      "velocity": 0.8866901020211458
+    },
+    {
+      "time": 105.03,
+      "type": "snare",
+      "velocity": 0.7844266841476479
+    },
+    {
+      "time": 105.18,
+      "type": "hihat",
+      "velocity": 0.6578736373975473
+    },
+    {
+      "time": 105.34,
+      "type": "kick",
+      "velocity": 0.9027654877193154
+    },
+    {
+      "time": 105.34,
+      "type": "snare",
+      "velocity": 0.8773929694324301
+    },
+    {
+      "time": 105.34,
+      "type": "hihat",
+      "velocity": 0.6790982569144625
+    },
+    {
+      "time": 105.5,
+      "type": "hihat",
+      "velocity": 0.6543012720218586
+    },
+    {
+      "time": 105.66,
+      "type": "kick",
+      "velocity": 0.9072854863415508
+    },
+    {
+      "time": 105.66,
+      "type": "snare",
+      "velocity": 0.8024153661858685
+    },
+    {
+      "time": 105.66,
+      "type": "hihat",
+      "velocity": 0.5497870959415977
+    },
+    {
+      "time": 105.81,
+      "type": "hihat",
+      "velocity": 0.7731876918054216
+    },
+    {
+      "time": 105.97,
+      "type": "kick",
+      "velocity": 0.8305050276454422
+    },
+    {
+      "time": 105.97,
+      "type": "snare",
+      "velocity": 0.6488565813561947
+    },
+    {
+      "time": 105.97,
+      "type": "hihat",
+      "velocity": 0.5705636834550821
+    },
+    {
+      "time": 106.13,
+      "type": "hihat",
+      "velocity": 0.72764817577692
+    },
+    {
+      "time": 106.29,
+      "type": "kick",
+      "velocity": 0.9514962220362081
+    },
+    {
+      "time": 106.29,
+      "type": "snare",
+      "velocity": 0.7312984766201028
+    },
+    {
+      "time": 106.29,
+      "type": "hihat",
+      "velocity": 0.6322160019609235
+    },
+    {
+      "time": 106.45,
+      "type": "hihat",
+      "velocity": 0.6773675854758532
+    },
+    {
+      "time": 106.6,
+      "type": "snare",
+      "velocity": 0.4509609165262676
+    },
+    {
+      "time": 106.6,
+      "type": "hihat",
+      "velocity": 0.43637011747382326
+    },
+    {
+      "time": 106.61,
+      "type": "kick",
+      "velocity": 0.8322181215988455
+    },
+    {
+      "time": 106.76,
+      "type": "hihat",
+      "velocity": 0.5997330677926769
+    },
+    {
+      "time": 106.92,
+      "type": "kick",
+      "velocity": 0.951858111437508
+    },
+    {
+      "time": 106.92,
+      "type": "snare",
+      "velocity": 0.4491612599205355
+    },
+    {
+      "time": 106.92,
+      "type": "hihat",
+      "velocity": 0.6954264482086829
+    },
+    {
+      "time": 107.08,
+      "type": "hihat",
+      "velocity": 0.5525973610120133
+    },
+    {
+      "time": 107.24,
+      "type": "kick",
+      "velocity": 0.9104523417184615
+    },
+    {
+      "time": 107.24,
+      "type": "snare",
+      "velocity": 0.7426075850338312
+    },
+    {
+      "time": 107.24,
+      "type": "hihat",
+      "velocity": 0.5291467985615671
+    },
+    {
+      "time": 107.39,
+      "type": "hihat",
+      "velocity": 0.6859972259884928
+    },
+    {
+      "time": 107.55,
+      "type": "kick",
+      "velocity": 0.8637307398098568
+    },
+    {
+      "time": 107.55,
+      "type": "snare",
+      "velocity": 0.5647149044990025
+    },
+    {
+      "time": 107.55,
+      "type": "hihat",
+      "velocity": 0.6700455935409463
+    },
+    {
+      "time": 107.71,
+      "type": "hihat",
+      "velocity": 0.681129878164117
+    },
+    {
+      "time": 107.87,
+      "type": "kick",
+      "velocity": 0.9003205370748906
+    },
+    {
+      "time": 107.87,
+      "type": "snare",
+      "velocity": 0.6937945855012501
+    },
+    {
+      "time": 107.87,
+      "type": "hihat",
+      "velocity": 0.6824766237218114
+    },
+    {
+      "time": 108.02,
+      "type": "hihat",
+      "velocity": 0.5948518906233228
+    },
+    {
+      "time": 108.18,
+      "type": "kick",
+      "velocity": 0.9133039009544897
+    },
+    {
+      "time": 108.18,
+      "type": "snare",
+      "velocity": 0.8989173109213503
+    },
+    {
+      "time": 108.18,
+      "type": "hihat",
+      "velocity": 0.6853124149196401
+    },
+    {
+      "time": 108.34,
+      "type": "hihat",
+      "velocity": 0.6158271295688779
+    },
+    {
+      "time": 108.5,
+      "type": "kick",
+      "velocity": 0.9730552661337888
+    },
+    {
+      "time": 108.5,
+      "type": "snare",
+      "velocity": 0.8924648228961737
+    },
+    {
+      "time": 108.5,
+      "type": "hihat",
+      "velocity": 0.7129113285018082
+    },
+    {
+      "time": 108.66,
+      "type": "hihat",
+      "velocity": 0.6264447061105866
+    },
+    {
+      "time": 108.81,
+      "type": "kick",
+      "velocity": 0.8352680737745148
+    },
+    {
+      "time": 108.81,
+      "type": "snare",
+      "velocity": 0.7555129488228287
+    },
+    {
+      "time": 108.81,
+      "type": "hihat",
+      "velocity": 0.6167454885477837
+    },
+    {
+      "time": 108.97,
+      "type": "hihat",
+      "velocity": 0.4451002469184309
+    },
+    {
+      "time": 109.13,
+      "type": "kick",
+      "velocity": 0.9718203831749603
+    },
+    {
+      "time": 109.13,
+      "type": "snare",
+      "velocity": 0.9101506810532352
+    },
+    {
+      "time": 109.13,
+      "type": "hihat",
+      "velocity": 0.7353343189218849
+    },
+    {
+      "time": 109.29,
+      "type": "hihat",
+      "velocity": 0.5979563200785093
+    },
+    {
+      "time": 109.45,
+      "type": "kick",
+      "velocity": 0.9271180595025016
+    },
+    {
+      "time": 109.45,
+      "type": "snare",
+      "velocity": 0.48772807190949197
+    },
+    {
+      "time": 109.45,
+      "type": "hihat",
+      "velocity": 0.6233787274042881
+    },
+    {
+      "time": 109.6,
+      "type": "hihat",
+      "velocity": 0.6524050361821546
+    },
+    {
+      "time": 109.76,
+      "type": "hihat",
+      "velocity": 0.5332712391435602
+    },
+    {
+      "time": 109.92,
+      "type": "hihat",
+      "velocity": 0.7408108687794847
+    },
+    {
+      "time": 110.08,
+      "type": "kick",
+      "velocity": 0.9605588373682601
+    },
+    {
+      "time": 110.08,
+      "type": "snare",
+      "velocity": 0.7232541275909584
+    },
+    {
+      "time": 110.08,
+      "type": "hihat",
+      "velocity": 0.4980910010965895
+    },
+    {
+      "time": 110.24,
+      "type": "hihat",
+      "velocity": 0.48286243659746153
+    },
+    {
+      "time": 110.55,
+      "type": "kick",
+      "velocity": 0.9197742895804092
+    },
+    {
+      "time": 110.55,
+      "type": "snare",
+      "velocity": 0.6396548970970718
+    },
+    {
+      "time": 110.55,
+      "type": "hihat",
+      "velocity": 0.7396317555623209
+    },
+    {
+      "time": 110.87,
+      "type": "kick",
+      "velocity": 0.9313788548410559
+    },
+    {
+      "time": 110.87,
+      "type": "snare",
+      "velocity": 0.4708841559068654
+    },
+    {
+      "time": 110.87,
+      "type": "hihat",
+      "velocity": 0.7480032913841048
+    },
+    {
+      "time": 111.18,
+      "type": "kick",
+      "velocity": 0.8571850006407381
+    },
+    {
+      "time": 111.18,
+      "type": "snare",
+      "velocity": 0.7901184935759138
+    },
+    {
+      "time": 111.18,
+      "type": "hihat",
+      "velocity": 0.7050260169399136
+    },
+    {
+      "time": 111.5,
+      "type": "kick",
+      "velocity": 0.97649709283258
+    },
+    {
+      "time": 111.5,
+      "type": "snare",
+      "velocity": 0.4676147436585506
+    },
+    {
+      "time": 111.5,
+      "type": "hihat",
+      "velocity": 0.7245218390883333
+    },
+    {
+      "time": 111.66,
+      "type": "kick",
+      "velocity": 0.7528238520787411
+    },
+    {
+      "time": 111.66,
+      "type": "snare",
+      "velocity": 0.4129704134088812
+    },
+    {
+      "time": 111.66,
+      "type": "hihat",
+      "velocity": 0.3191100028104589
+    },
+    {
+      "time": 111.82,
+      "type": "snare",
+      "velocity": 0.3591208181337092
+    },
+    {
+      "time": 111.82,
+      "type": "hihat",
+      "velocity": 0.6810581465149307
+    },
+    {
+      "time": 111.97,
+      "type": "kick",
+      "velocity": 0.9201940812859171
+    },
+    {
+      "time": 111.97,
+      "type": "snare",
+      "velocity": 0.7247299254940808
+    },
+    {
+      "time": 111.97,
+      "type": "cymbal",
+      "velocity": 0.47018939287947703
+    },
+    {
+      "time": 112.13,
+      "type": "hihat",
+      "velocity": 0.5631607187666343
+    },
+    {
+      "time": 112.29,
+      "type": "kick",
+      "velocity": 0.9882508082250481
+    },
+    {
+      "time": 112.29,
+      "type": "snare",
+      "velocity": 0.7483070199887671
+    },
+    {
+      "time": 112.29,
+      "type": "hihat",
+      "velocity": 0.38864475714991675
+    },
+    {
+      "time": 112.29,
+      "type": "cymbal",
+      "velocity": 0.5542382709544788
+    },
+    {
+      "time": 112.45,
+      "type": "hihat",
+      "velocity": 0.7426612222129524
+    },
+    {
+      "time": 112.61,
+      "type": "kick",
+      "velocity": 0.92262972620288
+    },
+    {
+      "time": 112.61,
+      "type": "snare",
+      "velocity": 0.5945975986958023
+    },
+    {
+      "time": 112.61,
+      "type": "hihat",
+      "velocity": 0.6531728879439841
+    },
+    {
+      "time": 112.76,
+      "type": "kick",
+      "velocity": 0.9388033390242595
+    },
+    {
+      "time": 112.76,
+      "type": "snare",
+      "velocity": 0.8152734258602676
+    },
+    {
+      "time": 112.76,
+      "type": "hihat",
+      "velocity": 0.8107098712636616
+    },
+    {
+      "time": 112.84,
+      "type": "kick",
+      "velocity": 0.5476861987208372
+    },
+    {
+      "time": 112.92,
+      "type": "kick",
+      "velocity": 0.9572767589908998
+    },
+    {
+      "time": 112.92,
+      "type": "snare",
+      "velocity": 0.9250036560522997
+    },
+    {
+      "time": 112.92,
+      "type": "hihat",
+      "velocity": 0.7248446315096714
+    },
+    {
+      "time": 113.0,
+      "type": "kick",
+      "velocity": 0.6115550251865329
+    },
+    {
+      "time": 113.08,
+      "type": "kick",
+      "velocity": 0.9650228077564014
+    },
+    {
+      "time": 113.08,
+      "type": "snare",
+      "velocity": 0.7243298438363223
+    },
+    {
+      "time": 113.08,
+      "type": "hihat",
+      "velocity": 0.7435512116477205
+    },
+    {
+      "time": 113.16,
+      "type": "kick",
+      "velocity": 0.6799216845486343
+    },
+    {
+      "time": 113.24,
+      "type": "kick",
+      "velocity": 0.9182143523914846
+    },
+    {
+      "time": 113.24,
+      "type": "snare",
+      "velocity": 0.8215416087832108
+    },
+    {
+      "time": 113.24,
+      "type": "hihat",
+      "velocity": 0.7021969465452519
+    },
+    {
+      "time": 113.32,
+      "type": "kick",
+      "velocity": 0.8069702612860864
+    },
+    {
+      "time": 113.32,
+      "type": "snare",
+      "velocity": 0.8656598041881072
+    },
+    {
+      "time": 113.4,
+      "type": "kick",
+      "velocity": 0.927367181581432
+    },
+    {
+      "time": 113.4,
+      "type": "hihat",
+      "velocity": 0.7542717327994775
+    },
+    {
+      "time": 113.47,
+      "type": "kick",
+      "velocity": 0.7069838386009458
+    },
+    {
+      "time": 113.48,
+      "type": "snare",
+      "velocity": 0.6028915867887362
+    },
+    {
+      "time": 113.55,
+      "type": "kick",
+      "velocity": 0.8873119055603078
+    },
+    {
+      "time": 113.55,
+      "type": "snare",
+      "velocity": 0.7521813045221117
+    },
+    {
+      "time": 113.55,
+      "type": "hihat",
+      "velocity": 0.43177977659921024
+    },
+    {
+      "time": 113.63,
+      "type": "kick",
+      "velocity": 0.7267713048329489
+    },
+    {
+      "time": 113.63,
+      "type": "snare",
+      "velocity": 0.6571487600021222
+    },
+    {
+      "time": 113.71,
+      "type": "kick",
+      "velocity": 0.8903792413518611
+    },
+    {
+      "time": 113.71,
+      "type": "snare",
+      "velocity": 0.7352500503898679
+    },
+    {
+      "time": 113.71,
+      "type": "hihat",
+      "velocity": 0.7678408405243234
+    },
+    {
+      "time": 113.79,
+      "type": "kick",
+      "velocity": 0.8034747327850665
+    },
+    {
+      "time": 113.79,
+      "type": "snare",
+      "velocity": 0.5315470623272422
+    },
+    {
+      "time": 114.03,
+      "type": "kick",
+      "velocity": 0.8647471966657578
+    },
+    {
+      "time": 114.03,
+      "type": "hihat",
+      "velocity": 0.7913639747243517
+    },
+    {
+      "time": 114.11,
+      "type": "kick",
+      "velocity": 0.6272060955616785
+    },
+    {
+      "time": 114.11,
+      "type": "snare",
+      "velocity": 0.42562901386236734
+    },
+    {
+      "time": 114.19,
+      "type": "hihat",
+      "velocity": 0.3794506984174641
+    },
+    {
+      "time": 114.26,
+      "type": "hihat",
+      "velocity": 0.44325134750487916
+    },
+    {
+      "time": 114.34,
+      "type": "kick",
+      "velocity": 0.9483465564058592
+    },
+    {
+      "time": 114.34,
+      "type": "snare",
+      "velocity": 0.6743211875710894
+    },
+    {
+      "time": 114.34,
+      "type": "hihat",
+      "velocity": 0.8414434579152675
+    },
+    {
+      "time": 114.42,
+      "type": "kick",
+      "velocity": 0.5219915665552414
+    },
+    {
+      "time": 114.51,
+      "type": "kick",
+      "velocity": 0.5391277728725249
+    },
+    {
+      "time": 114.82,
+      "type": "snare",
+      "velocity": 0.947722491057939
+    },
+    {
+      "time": 114.82,
+      "type": "hihat",
+      "velocity": 0.5676592625172212
+    },
+    {
+      "time": 115.13,
+      "type": "kick",
+      "velocity": 0.9747027676332064
+    },
+    {
+      "time": 115.13,
+      "type": "hihat",
+      "velocity": 0.6185023323448798
+    },
+    {
+      "time": 115.37,
+      "type": "hihat",
+      "velocity": 0.31889503404377606
+    },
+    {
+      "time": 115.44,
+      "type": "hihat",
+      "velocity": 0.4346163755858811
+    },
+    {
+      "time": 115.6,
+      "type": "hihat",
+      "velocity": 0.6142291939928168
+    },
+    {
+      "time": 115.75,
+      "type": "hihat",
+      "velocity": 0.601264506191249
+    },
+    {
+      "time": 116.07,
+      "type": "hihat",
+      "velocity": 0.6676766396707944
+    },
+    {
+      "time": 116.23,
+      "type": "hihat",
+      "velocity": 0.5921728750839858
+    },
+    {
+      "time": 116.39,
+      "type": "hihat",
+      "velocity": 0.5967780469617413
+    },
+    {
+      "time": 117.34,
+      "type": "hihat",
+      "velocity": 0.4824335330338138
+    },
+    {
+      "time": 117.49,
+      "type": "hihat",
+      "velocity": 0.43653390473946513
+    }
+  ],
+  "melody": [
+    {
+      "time": 1.8692063492063493,
+      "pitch": 60.0,
+      "duration": 0.19865351473922876,
+      "amplitude": 0.7636865731048132
+    },
+    {
+      "time": 2.4625990929705215,
+      "pitch": 59.0,
+      "duration": 0.1393197278911562,
+      "amplitude": 0.6317550762785502
+    },
+    {
+      "time": 3.844186394557823,
+      "pitch": 57.0,
+      "duration": 0.3495832199546487,
+      "amplitude": 0.4979407941337163
+    },
+    {
+      "time": 6.517048979591837,
+      "pitch": 62.0,
+      "duration": 0.3366893424036279,
+      "amplitude": 0.49308784379309545
+    },
+    {
+      "time": 7.306527437641724,
+      "pitch": 60.0,
+      "duration": 0.2786394557823124,
+      "amplitude": 0.8258848967387815
+    },
+    {
+      "time": 8.271439455782312,
+      "pitch": 63.0,
+      "duration": 0.2205895691609978,
+      "amplitude": 0.4185142090788511
+    },
+    {
+      "time": 8.515248979591837,
+      "pitch": 63.0,
+      "duration": 0.2205895691609978,
+      "amplitude": 0.4950656805302215
+    },
+    {
+      "time": 9.525317006802721,
+      "pitch": 61.0,
+      "duration": 0.19736961451247126,
+      "amplitude": 0.4372064328413136
+    },
+    {
+      "time": 11.558346938775511,
+      "pitch": 82.0,
+      "duration": 0.13931972789115576,
+      "amplitude": 0.524200943643204
+    },
+    {
+      "time": 11.651226757369615,
+      "pitch": 70.0,
+      "duration": 0.2321995464852602,
+      "amplitude": 0.6344785764758565
+    },
+    {
+      "time": 14.625948752834466,
+      "pitch": 75.0,
+      "duration": 0.17414965986394648,
+      "amplitude": 0.5269573495333912
+    },
+    {
+      "time": 19.806566439909297,
+      "pitch": 63.0,
+      "duration": 0.1289936507936531,
+      "amplitude": 0.3828511299567716
+    },
+    {
+      "time": 22.607138775510204,
+      "pitch": 65.0,
+      "duration": 0.18575963718820887,
+      "amplitude": 0.49185490328496845
+    },
+    {
+      "time": 22.96704807256236,
+      "pitch": 58.0,
+      "duration": 0.20897959183673365,
+      "amplitude": 0.8193937799545168
+    },
+    {
+      "time": 24.338309297052156,
+      "pitch": 56.0,
+      "duration": 0.13931972789115576,
+      "amplitude": 0.645635226072766
+    },
+    {
+      "time": 24.837538321995467,
+      "pitch": 72.0,
+      "duration": 0.13931972789115576,
+      "amplitude": 0.5452642527470926
+    },
+    {
+      "time": 27.9748,
+      "pitch": 70.0,
+      "duration": 0.19736961451247126,
+      "amplitude": 0.47779168360613655
+    },
+    {
+      "time": 40.70703854875284,
+      "pitch": 90.0,
+      "duration": 0.23219954648525487,
+      "amplitude": 0.4921676778631554
+    },
+    {
+      "time": 41.322367346938776,
+      "pitch": 68.0,
+      "duration": 0.1973696145124748,
+      "amplitude": 0.9999999999999999
+    },
+    {
+      "time": 51.53395691609977,
+      "pitch": 68.0,
+      "duration": 0.2334834467120217,
+      "amplitude": 0.6180376647426498
+    },
+    {
+      "time": 65.84772018140589,
+      "pitch": 60.0,
+      "duration": 0.15092970521541815,
+      "amplitude": 0.8120986901403036
+    },
+    {
+      "time": 65.84772018140589,
+      "pitch": 63.0,
+      "duration": 0.23219954648526198,
+      "amplitude": 0.5251149290997402
+    },
+    {
+      "time": 65.87094013605441,
+      "pitch": 65.0,
+      "duration": 0.25541950113378675,
+      "amplitude": 0.5754700591015228
+    },
+    {
+      "time": 67.19447755102041,
+      "pitch": 65.0,
+      "duration": 0.1857596371881982,
+      "amplitude": 0.6908971771263152
+    },
+    {
+      "time": 68.15938956916101,
+      "pitch": 65.0,
+      "duration": 0.23219954648524777,
+      "amplitude": 0.6764496598736301
+    },
+    {
+      "time": 68.5076888888889,
+      "pitch": 61.0,
+      "duration": 0.17414965986394293,
+      "amplitude": 0.5767141670857312
+    },
+    {
+      "time": 68.54251882086169,
+      "pitch": 56.0,
+      "duration": 0.13931972789114866,
+      "amplitude": 0.5525689755750248
+    },
+    {
+      "time": 71.95841995464852,
+      "pitch": 62.0,
+      "duration": 0.22058956916099248,
+      "amplitude": 0.8867351099395395
+    },
+    {
+      "time": 77.08098775510204,
+      "pitch": 66.0,
+      "duration": 0.16253968253967344,
+      "amplitude": 0.8135572818636011
+    },
+    {
+      "time": 80.75230839002268,
+      "pitch": 66.0,
+      "duration": 0.27863945578232574,
+      "amplitude": 0.7182750972188466
+    },
+    {
+      "time": 81.17026757369615,
+      "pitch": 54.0,
+      "duration": 0.13931972789116287,
+      "amplitude": 0.7539972105179211
+    },
+    {
+      "time": 82.61118866213151,
+      "pitch": 81.0,
+      "duration": 0.13931972789116287,
+      "amplitude": 0.6620140773282077
+    },
+    {
+      "time": 82.80855827664399,
+      "pitch": 82.0,
+      "duration": 0.3018594104308363,
+      "amplitude": 0.5616734522581446
+    },
+    {
+      "time": 83.12202766439908,
+      "pitch": 82.0,
+      "duration": 0.23219954648526198,
+      "amplitude": 0.9695257479800721
+    },
+    {
+      "time": 83.35422721088435,
+      "pitch": 82.0,
+      "duration": 0.30314331065760314,
+      "amplitude": 0.9396744024313385
+    },
+    {
+      "time": 85.34081723356009,
+      "pitch": 73.0,
+      "duration": 0.47729297052154607,
+      "amplitude": 0.6469259646632072
+    },
+    {
+      "time": 85.44659092970522,
+      "pitch": 85.0,
+      "duration": 0.5572789115646231,
+      "amplitude": 0.5499106047802083
+    },
+    {
+      "time": 85.81811020408163,
+      "pitch": 73.0,
+      "duration": 0.16253968253968765,
+      "amplitude": 0.7769959029002447
+    },
+    {
+      "time": 85.98064988662132,
+      "pitch": 73.0,
+      "duration": 0.34829931972788586,
+      "amplitude": 0.7300481744458651
+    },
+    {
+      "time": 86.32894920634921,
+      "pitch": 73.0,
+      "duration": 0.18575963718821242,
+      "amplitude": 0.8819934507441417
+    },
+    {
+      "time": 86.51470884353742,
+      "pitch": 73.0,
+      "duration": 0.25541950113378675,
+      "amplitude": 0.8120098618191068
+    },
+    {
+      "time": 86.8630081632653,
+      "pitch": 73.0,
+      "duration": 0.26702947845805625,
+      "amplitude": 0.6276098540785967
+    },
+    {
+      "time": 90.61559863945577,
+      "pitch": 83.0,
+      "duration": 0.16253968253968765,
+      "amplitude": 0.45428065129061496
+    },
+    {
+      "time": 90.90584807256235,
+      "pitch": 84.0,
+      "duration": 0.13931972789116287,
+      "amplitude": 0.40535649268960816
+    },
+    {
+      "time": 90.91745804988662,
+      "pitch": 65.0,
+      "duration": 0.24380952380951726,
+      "amplitude": 0.6994895269960094
+    },
+    {
+      "time": 91.16126757369614,
+      "pitch": 65.0,
+      "duration": 0.13931972789116287,
+      "amplitude": 0.7252333725445298
+    },
+    {
+      "time": 91.87076009070294,
+      "pitch": 65.0,
+      "duration": 0.24380952380951726,
+      "amplitude": 0.6591865746818996
+    },
+    {
+      "time": 92.81116825396825,
+      "pitch": 70.0,
+      "duration": 0.13931972789116287,
+      "amplitude": 0.3500630365663233
+    },
+    {
+      "time": 92.95048798185941,
+      "pitch": 70.0,
+      "duration": 0.16253968253967344,
+      "amplitude": 0.702180973979525
+    },
+    {
+      "time": 93.11302766439908,
+      "pitch": 70.0,
+      "duration": 0.16253968253968765,
+      "amplitude": 0.45248021545215533
+    },
+    {
+      "time": 93.27556734693877,
+      "pitch": 82.0,
+      "duration": 0.19865351473923454,
+      "amplitude": 0.5281409741261514
+    },
+    {
+      "time": 93.27556734693877,
+      "pitch": 70.0,
+      "duration": 0.1406036281179155,
+      "amplitude": 0.5978388120601581
+    },
+    {
+      "time": 93.41617097505669,
+      "pitch": 70.0,
+      "duration": 0.23219954648526198,
+      "amplitude": 0.486242521946861
+    },
+    {
+      "time": 106.68246848072563,
+      "pitch": 94.0,
+      "duration": 0.15092970521541815,
+      "amplitude": 0.5644408125046406
+    },
+    {
+      "time": 116.39482902494332,
+      "pitch": 100.0,
+      "duration": 0.13931972789114866,
+      "amplitude": 0.7148692301338059
+    },
+    {
+      "time": 121.36775102040816,
+      "pitch": 41.0,
+      "duration": 0.4179591836734602,
+      "amplitude": 0.45106394931568516
+    },
+    {
+      "time": 121.40258095238094,
+      "pitch": 29.0,
+      "duration": 0.38312925170068013,
+      "amplitude": 0.6135616806557064
+    }
+  ],
+  "accents": [
+    {
+      "time": 0.2,
+      "strength": 1.0
+    }
+  ],
+  "per_beat_salience": [
+    1.0,
+    0.2418573210501052,
+    0.2774824418702471,
+    0.21016121936436194,
+    0.25607423013924385,
+    0.1490527062354926,
+    0.18950676169774427,
+    0.1626239508900743,
+    0.5971014419878946,
+    0.11272758683605989,
+    0.2383597625148915,
+    0.2478093542365947,
+    0.2543202529117754,
+    0.11755899574697137,
+    0.2049350249031164,
+    0.11668656657211768,
+    0.2860543865034543,
+    0.10806982570133149,
+    0.10297310134589048,
+    0.10795780517671308,
+    0.12460534414924024,
+    0.12233498303210308,
+    0.14168074206354336,
+    0.11804412203923807,
+    0.13708607478325804,
+    0.09788467776320353,
+    0.13766194089307057,
+    0.13316449840904515,
+    0.08513176758410958,
+    0.11486477642108033,
+    0.16404354266126286,
+    0.14094231250270373,
+    0.12551123581425871,
+    0.1697460737743949,
+    0.1398386788713567,
+    0.30484390396836003,
+    0.3203460560235116,
+    0.33762080218348633,
+    0.253342278214127,
+    0.3936087960734791,
+    0.3484587779634278,
+    0.30859653168173495,
+    0.21721027150391006,
+    0.3917246403809927,
+    0.09727030085671956,
+    0.2495566868551038,
+    0.23432556700264046,
+    0.18237929120020713,
+    0.21449859261994259,
+    0.08098837500720331,
+    0.09588004114309942,
+    0.12546625001576348,
+    0.14723789990768582,
+    0.11506376549870005,
+    0.14382892618170678,
+    0.09412556507111447,
+    0.1845977924414121,
+    0.05450862558039562,
+    0.08870846281341603,
+    0.11923594140420661,
+    0.14960712203109694,
+    0.12086457895846692,
+    0.12764587131535482,
+    0.08802849782990663,
+    0.07609117349301465,
+    0.16617127415425104,
+    0.29247826674118205,
+    0.11283212469293127,
+    0.12688244964424006,
+    0.15102365089695435,
+    0.1699682790758111,
+    0.13664534565295713,
+    0.11328708086884189,
+    0.11580471921279302,
+    0.15374374029946952,
+    0.15412567561505933,
+    0.13909966067398763,
+    0.1317002999611939,
+    0.1469245158055493,
+    0.15043281945164777,
+    0.0879388055858454,
+    0.1471880653404905,
+    0.36659564717054594,
+    0.10397807350877017,
+    0.13889468546217026,
+    0.1488759257157461,
+    0.12706086637400058,
+    0.17426029738795434,
+    0.1277310939125485,
+    0.16849854345382703,
+    0.10334724471013303,
+    0.12769950707776562,
+    0.16122626837004908,
+    0.13026402682937457,
+    0.11017353284240648,
+    0.17901494410467148,
+    0.12291191666918085,
+    0.14660649244940957,
+    0.15230651936306894,
+    0.11714433623110118,
+    0.14338116334372367,
+    0.12949336193588068,
+    0.16027955126980273,
+    0.17133058354272832,
+    0.17862025832324072,
+    0.03972857590505959,
+    0.08182814483156375,
+    0.5095950547827057,
+    0.1709993507837925,
+    0.18451155220140483,
+    0.1981078388507133,
+    0.39854312658502855,
+    0.21432451583747533,
+    0.11351513262799114,
+    0.175105858797151,
+    0.29692618394161235,
+    0.12826985596722598,
+    0.20791107142703213,
+    0.12913263748913117,
+    0.20032199016773466,
+    0.17095623066378884,
+    0.15932125099988395,
+    0.11400213457563975,
+    0.36683261826964964,
+    0.07544361843774029,
+    0.13178909428512547,
+    0.1339117974253876,
+    0.14128233490201975,
+    0.0762121632420392,
+    0.13087214822562201,
+    0.1583600474548793,
+    0.12601945860763797,
+    0.07114941518661494,
+    0.10152389816420429,
+    0.08988358086397316,
+    0.2478979490227197,
+    0.12722866769245061,
+    0.12440600588045897,
+    0.15696356216169363,
+    0.16220299595640625,
+    0.10615126969098937,
+    0.21261437706611422,
+    0.11577671408163842,
+    0.157678176885317,
+    0.09541425006429108,
+    0.18333390002070404,
+    0.14498884942829227,
+    0.13894925905227204,
+    0.12078080301037102,
+    0.11242683347708037,
+    0.1369943771842406,
+    0.11624359264149266,
+    0.11146280647211251,
+    0.11134234549827543,
+    0.13679456002472354,
+    0.052849309088372425,
+    0.051881271373492154,
+    0.19483188700349607,
+    0.07413285957470991,
+    0.1707286577953754,
+    0.11853893589201461,
+    0.07887564875727056,
+    0.0825850964892999,
+    0.13198113944707596,
+    0.13007284965688276,
+    0.13166244763928417,
+    0.1384288444989103,
+    0.19150505301559892,
+    0.08718332551943282,
+    0.0974188168461629,
+    0.1349925640240997,
+    0.16543993816243557,
+    0.0937194357964759,
+    0.05357800120425057,
+    0.07742777749044334,
+    0.3462011673121316,
+    0.14297449531700732,
+    0.1215851997700686,
+    0.13022585524697433,
+    0.17262817789896906,
+    0.16394051131483123,
+    0.14052721400365906,
+    0.11513825296189929,
+    0.1811624298405118,
+    0.08029300071658017,
+    0.07382079242209685,
+    0.1269179075124707,
+    0.1304565608589512,
+    0.1038389158424558,
+    0.11141719212952654,
+    0.1037570754110838,
+    0.09910099039393074,
+    0.1416380509498239,
+    0.11905821307987882,
+    0.1679025040717685,
+    0.1196766705345075,
+    0.17000355736001585
+  ],
+  "duration_s": 122.62666666666667
+}
