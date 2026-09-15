@@ -62,6 +62,10 @@
 - **GitHub Issues**：[提交 Issue 反馈](https://github.com/KaysonSear/dance-cube-arranger/issues)
 - **QQ 联系方式**：`1159239254` (Kayson)
 
+### 📄 开源许可证
+
+本项目采用 **[GNU General Public License v3.0 (GPL-3.0)](LICENSE)** 强传染性开源协议开放源代码。任何修改、分发或基于本项目的衍生作品均必须以相同的 GPL-3.0 协议完整开源。
+
 ---
 
 ## Dance Cube Arranger (EN)
@@ -122,6 +126,10 @@ If you encounter any bugs, unexpected behavior, or have feature suggestions, ple
 - **GitHub Issues**: [Submit an Issue](https://github.com/KaysonSear/dance-cube-arranger/issues)
 - **QQ**: `1159239254` (Kayson)
 
+### 📄 License
+
+This project is licensed under the **[GNU General Public License v3.0 (GPL-3.0)](LICENSE)** copyleft license. Any modifications, distributions, or derivative works based on this project must also be open-sourced under the same GPL-3.0 terms.
+
 ---
 
 ## Dance Cube Arranger (JA)
@@ -181,3 +189,7 @@ If you encounter any bugs, unexpected behavior, or have feature suggestions, ple
 
 - **GitHub Issues**: [Issue を作成して報告](https://github.com/KaysonSear/dance-cube-arranger/issues)
 - **QQ**: `1159239254` (Kayson)
+
+### 📄 ライセンス
+
+本プロジェクトは強力なコピーレフト型（伝染性）オープンソースライセンスである **[GNU General Public License v3.0 (GPL-3.0)](LICENSE)** のもとで公開されています。本プロジェクトを変更・派生した成果物はすべて同じ GPL-3.0 ライセンスに基づいて公開する必要があります。
