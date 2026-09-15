@@ -196,7 +196,7 @@ Write-Host " 启动方式: 双击 $PackageDir\启动编辑器.exe 或 启动编�
 Write-Host "================================================="
 
 if ($Zip) {
-    $ZipPath = Join-Path $DistRoot "dance-cube-arranger-portable-260915.zip"
+    $ZipPath = Join-Path $DistRoot "dance-cube-arranger-260915.zip"
     Write-Host "`n正在创建便携压缩包: $ZipPath ..."
     & (Join-Path $PSScriptRoot "create_portable_zip.ps1") -PackageDir $PackageDir -ZipPath $ZipPath
 }
