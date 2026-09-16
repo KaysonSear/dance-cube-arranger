@@ -11,6 +11,8 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $UiDir = Join-Path $RepoRoot "arranger-ui"
+$ServerJs = Join-Path $RepoRoot "server\server.js"
+$IsStandalone = (Test-Path -LiteralPath $ServerJs -PathType Leaf) -and (-not (Test-Path -LiteralPath $UiDir -PathType Container))
 $StateDir = Join-Path $RepoRoot "artifacts\arranger"
 $PidFile = Join-Path $StateDir "editor-server.pid"
 $PortFile = Join-Path $StateDir "editor-server.port"
@@ -55,6 +57,9 @@ function Test-EditorProcess([int]$ProcessId) {
         if ($null -eq $process -or [string]::IsNullOrWhiteSpace($process.CommandLine)) {
             return $false
         }
+        if ($IsStandalone) {
+            return $process.CommandLine.ToLowerInvariant().Contains("server.js")
+        }
         $expected = (Join-Path $UiDir "node_modules\next").ToLowerInvariant()
         return $process.CommandLine.ToLowerInvariant().Contains($expected)
     } catch {
@@ -94,12 +99,27 @@ if ($Mode -eq "stop") {
     exit 0
 }
 
-if (-not (Test-Path -LiteralPath $UiDir -PathType Container)) {
-    throw "Editor directory not found: $UiDir"
-}
-$npm = Get-Command "npm.cmd" -ErrorAction SilentlyContinue
-if ($null -eq $npm) {
-    throw "npm.cmd was not found. Install Node.js and ensure npm is on PATH."
+$nodeCmd = $null
+$npm = $null
+
+if (-not $IsStandalone) {
+    if (-not (Test-Path -LiteralPath $UiDir -PathType Container)) {
+        throw "Editor directory not found: $UiDir"
+    }
+    $npm = Get-Command "npm.cmd" -ErrorAction SilentlyContinue
+    if ($null -eq $npm) {
+        throw "npm.cmd was not found. Install Node.js and ensure npm is on PATH."
+    }
+} else {
+    $binNode = Join-Path $RepoRoot "bin\node.exe"
+    if (Test-Path -LiteralPath $binNode -PathType Leaf) {
+        $nodeCmd = $binNode
+    } else {
+        $nodeCmd = (Get-Command "node.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
+    }
+    if ($null -eq $nodeCmd) {
+        throw "node.exe was not found. Please ensure bin\node.exe exists or Node.js is on PATH."
+    }
 }
 
 if (Test-ManagedServer) {
@@ -111,16 +131,16 @@ if (Test-ManagedServer) {
     exit 0
 }
 
-# First run or missing deps: auto npm install (matches arranger-ui/start.sh).
-# The `next` module is the dev server entry point; without it the server cannot start,
-# so its directory is used as a readiness probe.
-if (-not (Test-Path -LiteralPath (Join-Path $UiDir "node_modules\next") -PathType Container)) {
-    Write-Host "First run: installing dependencies (this may take a few minutes)..."
-    $install = Start-Process -FilePath $npm.Source `
-        -ArgumentList @("install", "--no-audit", "--no-fund") `
-        -WorkingDirectory $UiDir -Wait -NoNewWindow -PassThru
-    if ($install.ExitCode -ne 0) {
-        throw "npm install failed (exit $($install.ExitCode)). Check your network/Node environment and retry."
+# First run or missing deps (Dev mode only): auto npm install (matches arranger-ui/start.sh).
+if (-not $IsStandalone) {
+    if (-not (Test-Path -LiteralPath (Join-Path $UiDir "node_modules\next") -PathType Container)) {
+        Write-Host "First run: installing dependencies (this may take a few minutes)..."
+        $install = Start-Process -FilePath $npm.Source `
+            -ArgumentList @("install", "--no-audit", "--no-fund") `
+            -WorkingDirectory $UiDir -Wait -NoNewWindow -PassThru
+        if ($install.ExitCode -ne 0) {
+            throw "npm install failed (exit $($install.ExitCode)). Check your network/Node environment and retry."
+        }
     }
 }
 
@@ -136,14 +156,40 @@ $Url = "http://localhost:$Port"
 $LaunchUrl = "$Url/?resume=1"
 
 New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
-$launcher = Start-Process `
-    -FilePath $npm.Source `
-    -ArgumentList @("run", "dev", "--", "--port", "$Port") `
-    -WorkingDirectory $UiDir `
-    -RedirectStandardOutput $StdoutLog `
-    -RedirectStandardError $StderrLog `
-    -WindowStyle Hidden `
-    -PassThru
+
+if ($IsStandalone) {
+    $binDir = Join-Path $RepoRoot "bin"
+    $pyDir = Join-Path $binDir "python"
+    $env:PORT = "$Port"
+    $env:HOSTNAME = "0.0.0.0"
+    $env:NODE_ENV = "production"
+    if (Test-Path (Join-Path $pyDir "python.exe")) {
+        $env:PYTHON_EXECUTABLE = Join-Path $pyDir "python.exe"
+    } elseif (Test-Path (Join-Path $binDir "python.exe")) {
+        $env:PYTHON_EXECUTABLE = Join-Path $binDir "python.exe"
+    }
+    if (Test-Path $binDir) {
+        $env:PATH = "$binDir;$pyDir;" + $env:PATH
+    }
+
+    $launcher = Start-Process `
+        -FilePath $nodeCmd `
+        -ArgumentList @("server.js") `
+        -WorkingDirectory (Join-Path $RepoRoot "server") `
+        -RedirectStandardOutput $StdoutLog `
+        -RedirectStandardError $StderrLog `
+        -WindowStyle Hidden `
+        -PassThru
+} else {
+    $launcher = Start-Process `
+        -FilePath $npm.Source `
+        -ArgumentList @("run", "dev", "--", "--port", "$Port") `
+        -WorkingDirectory $UiDir `
+        -RedirectStandardOutput $StdoutLog `
+        -RedirectStandardError $StderrLog `
+        -WindowStyle Hidden `
+        -PassThru
+}
 
 Write-Host "Starting Cube Chart Editor..."
 for ($attempt = 0; $attempt -lt 120; $attempt++) {
@@ -153,13 +199,17 @@ for ($attempt = 0; $attempt -lt 120; $attempt++) {
     $listenerPid = Get-ListenerPid $Port
     if ($null -ne $listenerPid -and (Test-EditorProcess $listenerPid)) {
         try {
-            $null = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 2
+            $null = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5
             Set-EditorServerState `
                 -PidPath $PidFile `
                 -PortPath $PortFile `
                 -ProcessId $listenerPid `
                 -Port $Port
-            Start-Process $LaunchUrl
+            try {
+                Start-Process $LaunchUrl
+            } catch {
+                # Non-interactive or headless environment
+            }
             Write-Host "Cube Chart Editor is ready at $Url"
             exit 0
         } catch {
