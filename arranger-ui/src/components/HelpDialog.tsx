@@ -1022,6 +1022,21 @@ function ShortcutsSection() {
               <td className="px-3.5 py-2">左右水平镜像选中 Clip 内的所有排键</td>
             </tr>
             <tr>
+              <td className="px-3.5 py-2 font-medium text-ink">Clip关系配对</td>
+              <td className="px-3.5 py-2"><KeyBadge>Shift + R / U / V</KeyBadge></td>
+              <td className="px-3.5 py-2">多选 Clip 标记重复 (R)、升级 (U，1对多) 或变奏 (V，严格1对1)</td>
+            </tr>
+            <tr>
+              <td className="px-3.5 py-2 font-medium text-ink">Clip角色语义</td>
+              <td className="px-3.5 py-2"><KeyBadge>Shift + I / O / D / B / K</KeyBadge></td>
+              <td className="px-3.5 py-2">标记 Intro (I，全谱唯一)、Outro (O，全谱唯一)、高潮 Drop (D)、蓄力 Build-Up (B)、间奏 Break (K)</td>
+            </tr>
+            <tr>
+              <td className="px-3.5 py-2 font-medium text-ink">清除Clip语义</td>
+              <td className="px-3.5 py-2"><KeyBadge>Shift + Delete</KeyBadge></td>
+              <td className="px-3.5 py-2">一键解绑选中 Clip 的语义与配对关系，恢复为普通 Clip</td>
+            </tr>
+            <tr>
               <td className="px-3.5 py-2 font-medium text-ink">排键互换</td>
               <td className="px-3.5 py-2"><KeyBadge>Alt + C</KeyBadge> → <KeyBadge>Alt + V</KeyBadge></td>
               <td className="px-3.5 py-2">先在点A按Alt+C标记，再在点B按Alt+V互换排键</td>

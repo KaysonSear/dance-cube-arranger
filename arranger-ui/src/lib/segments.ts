@@ -17,11 +17,14 @@ export interface LegacySegmentStructureV1 {
   relations: SegmentRelationV1[];
 }
 
+export type SegmentRole = "intro" | "outro" | "drop" | "buildup" | "break";
+
 export interface SegmentClipV2 {
   id: string;
   startSec: number;
   endSec: number;
   label: string;
+  role?: SegmentRole;
 }
 
 export interface LegacySegmentStructureV2 {
@@ -219,6 +222,7 @@ function normalizeV2(
         startSec: Math.max(0, item.startSec),
         endSec: Math.min(max, item.endSec),
         label: String(item.label ?? ""),
+        ...(item.role ? { role: item.role as SegmentRole } : {}),
       };
     })
     .filter((item) => item.endSec > item.startSec + EPS)
@@ -512,9 +516,32 @@ export function ensureRelation(
 ): RelationEditResult {
   const selected = new Set(selectedIds);
   const segmentIds = orderedSegmentIds(structure).filter((id) => selected.has(id));
-  if (segmentIds.length < 2) return { ok: false, error: "请至少选择两个桥段" };
+  if (kind === "variation") {
+    if (segmentIds.length !== 2) {
+      return {
+        ok: false,
+        error: `变奏关系只能一对一（当前选中了 ${segmentIds.length} 个 clip，请恰好选中 2 个）`,
+      };
+    }
+  } else if (segmentIds.length < 2) {
+    if (kind === "upgrade") {
+      return { ok: false, error: "标记升级关系至少需要选中 2 个 clip（升级关系支持一对多）" };
+    }
+    return { ok: false, error: "请至少选择两个 clip 进行配对" };
+  }
+
+  // 若为变奏关系，清理参与变奏的 clip 原先所在的旧一对一遍奏关系，确保变奏严格 1 对 1
+  let baseRelations = structure.relations;
+  if (kind === "variation") {
+    baseRelations = baseRelations.filter(
+      (r) => !(r.kind === "variation" && r.segmentIds.some((id) => segmentIds.includes(id))),
+    );
+  }
+
   const key = segmentIds.join("\u0000");
-  const existing = structure.relations.find((relation) => relation.segmentIds.join("\u0000") === key);
+  const existing = baseRelations.find(
+    (relation) => relation.kind === kind && relation.segmentIds.join("\u0000") === key,
+  );
   if (existing) return { ok: true, structure, relation: existing, created: false };
   const relation: SegmentRelationV1 = { id: relationId, kind, segmentIds };
   return {
@@ -523,10 +550,121 @@ export function ensureRelation(
       ...structure,
       initialized: true,
       source: "manual",
-      relations: [...structure.relations, relation],
+      relations: [...baseRelations, relation],
     },
     relation,
     created: true,
+  };
+}
+
+export function applyClipRoles(
+  structure: SegmentStructureV2,
+  selectedIds: readonly string[],
+  role: SegmentRole,
+): SegmentEditResult {
+  const selected = new Set(selectedIds);
+  const targetClips = structure.clips.filter((c) => selected.has(c.id));
+  if (targetClips.length === 0) {
+    return { ok: false, error: "请先选中至少一个 clip" };
+  }
+
+  if (role === "intro" || role === "outro") {
+    const roleName = role === "intro" ? "Intro" : "Outro";
+    if (targetClips.length > 1) {
+      return { ok: false, error: `单张谱面仅限一个 ${roleName}，请单选 clip 后再标记` };
+    }
+    const target = targetClips[0];
+    const isAlready = target.role === role;
+    const nextRole: SegmentRole | undefined = isAlready ? undefined : role;
+
+    const newClips = structure.clips.map((c) => {
+      if (c.id === target.id) {
+        return { ...c, role: nextRole };
+      }
+      if (c.role === role) {
+        return { ...c, role: undefined };
+      }
+      return c;
+    });
+
+    return {
+      ok: true,
+      structure: {
+        ...structure,
+        initialized: true,
+        source: "manual",
+        clips: newClips,
+      },
+    };
+  }
+
+  if (role === "drop" || role === "buildup" || role === "break") {
+    const allAlreadyRole = targetClips.every((c) => c.role === role);
+    const nextRole: SegmentRole | undefined = allAlreadyRole ? undefined : role;
+
+    const newClips = structure.clips.map((c) => {
+      if (selected.has(c.id)) {
+        return { ...c, role: nextRole };
+      }
+      return c;
+    });
+
+    return {
+      ok: true,
+      structure: {
+        ...structure,
+        initialized: true,
+        source: "manual",
+        clips: newClips,
+      },
+    };
+  }
+
+  const nextRole = role || undefined;
+  const newClips = structure.clips.map((c) => {
+    if (selected.has(c.id)) {
+      return { ...c, role: nextRole };
+    }
+    return c;
+  });
+
+  return {
+    ok: true,
+    structure: {
+      ...structure,
+      initialized: true,
+      source: "manual",
+      clips: newClips,
+    },
+  };
+}
+
+export function clearClipSemanticsAndRelations(
+  structure: SegmentStructureV2,
+  selectedIds: readonly string[],
+): SegmentStructureV2 {
+  const selected = new Set(selectedIds);
+  const newClips = structure.clips.map((c) => {
+    if (selected.has(c.id)) {
+      return { ...c, role: undefined };
+    }
+    return c;
+  });
+
+  const newRelations: SegmentRelationV1[] = [];
+  for (const relation of structure.relations) {
+    const remaining = relation.segmentIds.filter((id) => !selected.has(id));
+    if (remaining.length >= 2) {
+      newRelations.push({ ...relation, segmentIds: remaining });
+    }
+  }
+
+  return {
+    ...structure,
+    initialized: true,
+    source: "manual",
+    clips: newClips,
+    relations: newRelations,
   };
 }
 
@@ -717,5 +855,46 @@ export function formatAllClipsRangeText(
   segments: readonly { code: string; startSec: number; endSec: number }[],
 ): string {
   return segments.map(formatClipRangeText).join("\n");
+}
+
+/**
+ * 将谱面中所有的语义关系与角色格式化为纯文本。
+ * 例:
+ * S01(01 : 45 : 30 ~ 01 : 49 : 50) & S02(00 : 09 : 32 ~ 01 : 11 : 13) & S09(04 : 09 : 40 ~ 04 : 41 : 23) Repeat
+ * S02(01 : 45 : 30 ~ 01 : 49 : 50) & S03(00 : 10 : 32 ~ 01 : 11 : 13) Upgrade
+ * S01(00 : 00 : 00 ~ 00 : 15 : 00) Intro
+ */
+export function formatAllRelationsText(structure: SegmentStructureV2): string {
+  const segments = deriveSegments(structure);
+  const segmentById = new Map(segments.map((s) => [s.id, s]));
+  const lines: string[] = [];
+
+  // 1. 跨 Clip 配对关系 (Repeat, Upgrade, Variation 等)
+  for (const relation of structure.relations) {
+    const clipParts = relation.segmentIds
+      .map((id) => segmentById.get(id))
+      .filter((s): s is SegmentRange => s != null)
+      .map((s) => `${s.code}(${formatClipTime(s.startSec)} ~ ${formatClipTime(s.endSec)})`);
+    if (clipParts.length === 0) continue;
+
+    let kindName = relation.kind.charAt(0).toUpperCase() + relation.kind.slice(1);
+    if (relation.kind === "custom" && relation.note) {
+      kindName = relation.note;
+    }
+    lines.push(`${clipParts.join(" & ")} ${kindName}`);
+  }
+
+  // 2. 单 Clip 角色语义 (Intro, Outro, Drop, Build-Up, Break)
+  for (const s of segments) {
+    if (s.role) {
+      const roleName =
+        s.role === "buildup"
+          ? "Build-Up"
+          : s.role.charAt(0).toUpperCase() + s.role.slice(1);
+      lines.push(`${s.code}(${formatClipTime(s.startSec)} ~ ${formatClipTime(s.endSec)}) ${roleName}`);
+    }
+  }
+
+  return lines.join("\n");
 }
 

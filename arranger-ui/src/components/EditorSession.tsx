@@ -80,6 +80,8 @@ import {
   partitionTimedPoints,
   removeClip,
   restoreSegmentStructure,
+  applyClipRoles,
+  clearClipSemanticsAndRelations,
   type PersistedSegmentStructure,
   type SuggestedSection,
   type SegmentStructureV3,
@@ -1533,6 +1535,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       !e.ctrlKey &&
       !e.metaKey &&
       !e.altKey &&
+      !e.shiftKey &&
       !e.repeat &&
       tgt?.tagName !== "SELECT"
     ) {
@@ -1543,12 +1546,191 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       !e.ctrlKey &&
       !e.metaKey &&
       !e.altKey &&
+      !e.shiftKey &&
       !e.repeat &&
       tgt?.tagName !== "SELECT"
     ) {
       e.preventDefault();
       completeOutPointRef.current();
-    } else if (isKeyR && !e.altKey) {
+    } else if (
+      (k === "Delete" || k === "Backspace" || code === "Delete" || code === "Backspace") &&
+      e.shiftKey &&
+      !e.altKey &&
+      selectedSegmentIdsRef.current.size > 0
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      const nextStruct = clearClipSemanticsAndRelations(structureRef.current, selected);
+      onStructureChangeRef.current(nextStruct);
+      toast(`已清除选中 ${selected.length} 个 clip 的语义与配对关系（恢复为普通 clip）`);
+    } else if (
+      (k === "i" || k === "I" || code === "KeyI") &&
+      e.shiftKey &&
+      !e.altKey &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      if (selected.length === 0) {
+        toast("请按住 Ctrl 选中要标记为 Intro 的 clip");
+      } else {
+        const res = applyClipRoles(structureRef.current, selected, "intro");
+        if (!res.ok) {
+          toast(res.error);
+        } else {
+          onStructureChangeRef.current(res.structure);
+          toast("已设置/切换为 Intro 标记（全谱唯一）");
+        }
+      }
+    } else if (
+      (k === "o" || k === "O" || code === "KeyO") &&
+      e.shiftKey &&
+      !e.altKey &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      if (selected.length === 0) {
+        toast("请按住 Ctrl 选中要标记为 Outro 的 clip");
+      } else {
+        const res = applyClipRoles(structureRef.current, selected, "outro");
+        if (!res.ok) {
+          toast(res.error);
+        } else {
+          onStructureChangeRef.current(res.structure);
+          toast("已设置/切换为 Outro 标记（全谱唯一）");
+        }
+      }
+    } else if (
+      (k === "d" || k === "D" || code === "KeyD") &&
+      e.shiftKey &&
+      !e.altKey &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      if (selected.length === 0) {
+        toast("请按住 Ctrl 选中要标记为高潮 (Drop) 的 clip");
+      } else {
+        const res = applyClipRoles(structureRef.current, selected, "drop");
+        if (!res.ok) {
+          toast(res.error);
+        } else {
+          onStructureChangeRef.current(res.structure);
+          toast(`已设置/切换 ${selected.length} 个 clip 为高潮 (Drop) 标记`);
+        }
+      }
+    } else if (
+      (k === "b" || k === "B" || code === "KeyB") &&
+      e.shiftKey &&
+      !e.altKey &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      if (selected.length === 0) {
+        toast("请按住 Ctrl 选中要标记为蓄力段 (Build-Up) 的 clip");
+      } else {
+        const res = applyClipRoles(structureRef.current, selected, "buildup");
+        if (!res.ok) {
+          toast(res.error);
+        } else {
+          onStructureChangeRef.current(res.structure);
+          toast(`已设置/切换 ${selected.length} 个 clip 为蓄力段 (Build-Up) 标记`);
+        }
+      }
+    } else if (
+      (k === "k" || k === "K" || code === "KeyK") &&
+      e.shiftKey &&
+      !e.altKey &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      if (selected.length === 0) {
+        toast("请按住 Ctrl 选中要标记为间奏 (Break) 的 clip");
+      } else {
+        const res = applyClipRoles(structureRef.current, selected, "break");
+        if (!res.ok) {
+          toast(res.error);
+        } else {
+          onStructureChangeRef.current(res.structure);
+          toast(`已设置/切换 ${selected.length} 个 clip 为间奏 (Break) 标记`);
+        }
+      }
+    } else if (
+      (k === "v" || k === "V" || code === "KeyV") &&
+      e.shiftKey &&
+      !e.altKey &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      if (selected.length !== 2) {
+        toast(`变奏关系只能一对一（当前选中了 ${selected.length} 个 clip，请恰好选中 2 个）`);
+      } else {
+        const result = ensureRelation(
+          structureRef.current,
+          "variation",
+          selected,
+          `relation-${Date.now()}-${relationCounterRef.current++}`,
+        );
+        if (!result.ok) {
+          toast(result.error);
+        } else {
+          onStructureChangeRef.current(result.structure);
+          toast(result.created ? "已建立 1 对 1 变奏配对关系" : "该变奏配对已存在");
+        }
+      }
+    } else if (
+      (k === "u" || k === "U" || code === "KeyU") &&
+      e.shiftKey &&
+      !e.altKey &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      if (selected.length < 2) {
+        toast("标记升级关系至少需要选中 2 个 clip（升级关系支持一对多）");
+      } else {
+        const result = ensureRelation(
+          structureRef.current,
+          "upgrade",
+          selected,
+          `relation-${Date.now()}-${relationCounterRef.current++}`,
+        );
+        if (!result.ok) {
+          toast(result.error);
+        } else {
+          onStructureChangeRef.current(result.structure);
+          toast(result.created ? `已将选中的 ${selected.length} 个 clip 建立为升级配对关系` : "该升级关系已存在");
+        }
+      }
+    } else if (
+      (k === "r" || k === "R" || code === "KeyR") &&
+      e.shiftKey &&
+      !e.altKey &&
+      !e.repeat
+    ) {
+      e.preventDefault();
+      const selected = [...selectedSegmentIdsRef.current];
+      if (selected.length < 2) {
+        toast("标记重复关系至少需要选中 2 个 clip（请按住 Ctrl 多选）");
+      } else {
+        const result = ensureRelation(
+          structureRef.current,
+          "repeat",
+          selected,
+          `relation-${Date.now()}-${relationCounterRef.current++}`,
+        );
+        if (!result.ok) {
+          toast(result.error);
+        } else {
+          onStructureChangeRef.current(result.structure);
+          toast(result.created ? `已将选中的 ${selected.length} 个 clip 建立为重复配对关系` : "该重复关系已存在");
+        }
+      }
+    } else if (isKeyR && !e.shiftKey && !e.altKey) {
       e.preventDefault();
       if (simulatorTextCaptureRef.current) {
         simulatorTextCaptureRef.current.value = "";
@@ -1562,7 +1744,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
         }
       }
       const selected = [...selectedSegmentIdsRef.current];
-      // 裸按 R 且已多选 2 个以上段落时标记重复关系；其余情况(单点/无多选段落/Ctrl+R)均进行随机排键
+      // 裸按 R 且已多选 2 个以上段落时亦可建立重复关系；其余情况均进行随机排键
       if (selected.length >= 2 && !e.ctrlKey && !e.metaKey) {
         const result = ensureRelation(
           structureRef.current,
@@ -1574,9 +1756,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
           toast(result.error);
         } else {
           onStructureChangeRef.current(result.structure);
-          selectedSegmentIdsRef.current = new Set();
-          setSelectedSegmentIds(new Set());
-          toast(result.created ? "已标记为重复关系；可在右侧改为升级或变奏" : "该关系已存在");
+          toast(result.created ? `已将选中的 ${selected.length} 个 clip 建立为重复配对关系` : "该重复关系已存在");
         }
       } else {
         randomizeTargetOnset();

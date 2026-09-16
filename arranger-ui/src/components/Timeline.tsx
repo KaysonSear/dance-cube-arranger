@@ -243,7 +243,12 @@ export default function Timeline(props: TimelineProps) {
       ctx.fillStyle = segment.index % 2 === 0 ? T.segmentRibbonA : T.segmentRibbonB;
       ctx.fillRect(left, RULER_H, width, SEGMENT_H);
       if (width > 42) {
-        const label = segment.label ? `${segment.code} ${segment.label}` : segment.code;
+        const rolePrefix = segment.role
+          ? `[${segment.role === "buildup" ? "Build-Up" : segment.role === "break" ? "Break" : segment.role === "drop" ? "Drop" : segment.role === "intro" ? "Intro" : "Outro"}] `
+          : "";
+        const label = segment.label
+          ? `${segment.code} ${rolePrefix}${segment.label}`
+          : `${segment.code} ${rolePrefix}`.trim();
         ctx.font = `10px ${THEME.font.sans}`;
         ctx.textAlign = "center";
         ctx.fillStyle = T.segmentText;

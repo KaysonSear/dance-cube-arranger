@@ -8,6 +8,7 @@ import { fmtTime } from "@/lib/format";
 import {
   deriveSegments,
   formatAllClipsRangeText,
+  formatAllRelationsText,
   formatClipRangeText,
   formatClipTime,
   mergeClips,
@@ -25,7 +26,7 @@ import {
   type SegmentStructureV3,
   type TimedPoint,
 } from "@/lib/segments";
-import { relationGroupColor, THEME } from "@/lib/theme";
+import { relationGroupCardBg, relationGroupColor, THEME } from "@/lib/theme";
 
 export interface SegmentsPanelProps {
   structure: SegmentStructureV3;
@@ -190,6 +191,20 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
     }
   }
 
+  async function handleCopyAllRelations() {
+    const text = formatAllRelationsText(structure);
+    if (!text.trim()) {
+      onToast("当前谱面没有已标记的语义或配对关系");
+      return;
+    }
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
+      onToast("已复制全部语义关系到剪贴板");
+    } else {
+      onToast("复制失败，请检查剪贴板权限");
+    }
+  }
+
   return (
     <details open className="border-t border-cream">
       <summary className="cursor-pointer select-none px-3 py-2 font-serif text-sm font-medium text-ink">
@@ -304,7 +319,14 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
             const nextSegment = segments[index + 1] ?? null;
             const count = pointCoverage.bySegment[index]?.length ?? 0;
             const relationIndexes = relationIndexesForSegment(structure.relations, segment.id);
+            const hasRelation = relationIndexes.length > 0;
+            const primaryRelIndex = hasRelation ? relationIndexes[0] : -1;
+            const cardBg = hasRelation ? relationGroupCardBg(primaryRelIndex) : "#ffffff";
+            const borderLeft = hasRelation
+              ? `4px solid ${relationGroupColor(primaryRelIndex)}`
+              : "4px solid transparent";
             const relationShadow = relationIndexes
+              .slice(1)
               .map(
                 (relationIndex, layer) =>
                   `inset 0 0 0 ${(layer + 1) * 2}px ${relationGroupColor(relationIndex)}`,
@@ -315,13 +337,20 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
               <div
                 key={segment.id}
                 onPointerDown={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (target.tagName === "INPUT" || target.tagName === "BUTTON") {
+                    return;
+                  }
+                  (document.activeElement as HTMLElement)?.blur?.();
                   if (event.ctrlKey || event.metaKey) {
                     event.preventDefault();
                     onToggleSegment(segment.id);
                   }
                 }}
-                className="rounded-xl bg-white p-2 shadow-ring"
+                className="rounded-xl p-2 shadow-ring transition-colors"
                 style={{
+                  backgroundColor: cardBg,
+                  borderLeft,
                   ...(relationShadow ? { boxShadow: relationShadow } : {}),
                   ...(selected
                     ? {
@@ -331,8 +360,46 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
                     : {}),
                 }}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <strong className="font-mono text-ink">{segment.code}</strong>
+                  {segment.role === "intro" && (
+                    <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-300">
+                      Intro
+                    </span>
+                  )}
+                  {segment.role === "outro" && (
+                    <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-800 border border-indigo-300">
+                      Outro
+                    </span>
+                  )}
+                  {segment.role === "drop" && (
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300">
+                      Drop
+                    </span>
+                  )}
+                  {segment.role === "buildup" && (
+                    <span className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-800 border border-orange-300">
+                      Build-Up
+                    </span>
+                  )}
+                  {segment.role === "break" && (
+                    <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 border border-teal-300">
+                      Break
+                    </span>
+                  )}
+                  {relationIndexes.map((relIdx) => {
+                    const rel = structure.relations[relIdx];
+                    if (!rel) return null;
+                    return (
+                      <span
+                        key={rel.id}
+                        className="rounded px-1.5 py-0.5 font-mono text-[10px] font-bold text-white shadow-sm"
+                        style={{ backgroundColor: relationGroupColor(relIdx) }}
+                      >
+                        {relationBadge(rel.kind, relIdx + 1)}
+                      </span>
+                    );
+                  })}
                   <input
                     value={segment.label}
                     placeholder="名称（可选）"
@@ -378,9 +445,23 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
         </div>
 
         <div className="rounded-xl bg-cream p-2.5 shadow-ring">
-          <div className="flex items-center justify-between">
-            <strong className="text-ink">语义关系</strong>
-            <span className="text-[10px] text-stone">Ctrl 多选后按 R = 重复</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <strong className="text-ink">语义与配对关系</strong>
+              <button
+                type="button"
+                onClick={handleCopyAllRelations}
+                className="rounded-lg bg-sand px-2 py-1 text-[10px] font-semibold text-charcoal shadow-ring hover:bg-sand-deep hover:text-ink transition-colors"
+                title="一键复制谱中所有语义关系为纯文本"
+              >
+                一键复制所有语义关系
+              </button>
+            </div>
+            <div className="text-[10px] text-stone leading-relaxed border-t border-hairline pt-1">
+              <div>• 关系配对：Shift+R 重复 · Shift+U 升级 · Shift+V 变奏 (1对1)</div>
+              <div>• 角色语义：Shift+I Intro · Shift+O Outro · Shift+D Drop · Shift+B Build-Up · Shift+K Break</div>
+              <div>• 清除语义：Shift+Delete / Shift+Backspace 恢复为普通 Clip</div>
+            </div>
           </div>
           {structure.relations.length === 0 ? (
             <p className="mt-2 text-[11px] text-stone">尚未标记重复、升级或变奏关系。</p>

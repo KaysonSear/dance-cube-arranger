@@ -21,6 +21,22 @@ export function relationGroupColor(index: number): string {
   return RELATION_GROUP_COLORS[safe % RELATION_GROUP_COLORS.length];
 }
 
+export const RELATION_GROUP_CARD_BGS = [
+  "#f3e8f8",
+  "#e0f2f7",
+  "#fef3e2",
+  "#fce8ed",
+  "#eef5e6",
+  "#e8ecf8",
+  "#faebe4",
+  "#e4f4f2",
+] as const;
+
+export function relationGroupCardBg(index: number): string {
+  const safe = Number.isFinite(index) ? Math.max(0, Math.trunc(index)) : 0;
+  return RELATION_GROUP_CARD_BGS[safe % RELATION_GROUP_CARD_BGS.length];
+}
+
 export const THEME = {
   font: {
     sans: 'system-ui, "PingFang SC", "Microsoft YaHei", sans-serif',
