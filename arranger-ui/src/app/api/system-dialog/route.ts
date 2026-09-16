@@ -144,16 +144,29 @@ namespace ModernFolderPicker {
             dialog.SetOkButtonLabel("选择文件夹");
             string folder = initialDir;
             if (!string.IsNullOrEmpty(folder)) {
-                if (File.Exists(folder)) {
-                    folder = Path.GetDirectoryName(folder);
-                }
-                if (Directory.Exists(folder)) {
-                    IShellItem item;
-                    Guid iid = new Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE");
-                    if (SHCreateItemFromParsingName(folder, IntPtr.Zero, iid, out item) == 0 && item != null) {
-                        dialog.SetFolder(item);
+                try {
+                    while (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder)) {
+                        string parent = Path.GetDirectoryName(folder);
+                        if (string.IsNullOrEmpty(parent) || parent == folder) {
+                            if (folder.Length >= 2 && folder[1] == ':') {
+                                string rootPath = folder.Substring(0, 2) + "\\";
+                                if (Directory.Exists(rootPath)) folder = rootPath;
+                                else folder = null;
+                            } else {
+                                folder = null;
+                            }
+                            break;
+                        }
+                        folder = parent;
                     }
-                }
+                    if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder)) {
+                        IShellItem item;
+                        Guid iid = new Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE");
+                        if (SHCreateItemFromParsingName(folder, IntPtr.Zero, iid, out item) == 0 && item != null) {
+                            dialog.SetFolder(item);
+                        }
+                    }
+                } catch {}
             }
             IntPtr owner = GetForegroundWindow();
             int hr = dialog.Show(owner);
@@ -178,8 +191,21 @@ namespace ModernFolderPicker {
     $d = New-Object System.Windows.Forms.FolderBrowserDialog;
     $d.Description = '选择输出目录';
     $d.RootFolder = [System.Environment+SpecialFolder]::MyComputer;
-    if ($env:ARRANGER_INITIAL_DIR -and (Test-Path -LiteralPath $env:ARRANGER_INITIAL_DIR)) {
-        $d.SelectedPath = $env:ARRANGER_INITIAL_DIR;
+    $folder = $env:ARRANGER_INITIAL_DIR;
+    while ($folder -and -not (Test-Path -LiteralPath $folder -PathType Container)) {
+        $parent = Split-Path -Parent $folder;
+        if (-not $parent -or $parent -eq $folder) {
+            if ($folder -match '^[a-zA-Z]:') {
+                $root = $folder.Substring(0, 2) + '\';
+                if (Test-Path -LiteralPath $root -PathType Container) { $folder = $root; break; }
+            }
+            $folder = $null;
+            break;
+        }
+        $folder = $parent;
+    }
+    if ($folder -and (Test-Path -LiteralPath $folder -PathType Container)) {
+        $d.SelectedPath = $folder;
     }
     if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         Write-Output $d.SelectedPath;
@@ -226,7 +252,8 @@ export async function POST(req: Request) {
   }
   let safeInitial: string | null = null;
   if (typeof initialDir === "string" && initialDir.trim()) {
-    const normalized = normalizeAbsolutePath(initialDir);
+    const cleanRaw = initialDir.trim().replace(/\\\\+/g, "\\");
+    const normalized = normalizeAbsolutePath(cleanRaw);
     if (normalized.ok) {
       safeInitial = normalized.path;
     }
