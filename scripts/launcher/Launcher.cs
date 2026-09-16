@@ -51,26 +51,60 @@ namespace DanceCubeArrangerLauncher
                     return;
                 }
 
-                // 3. 寻找 Node.js 运行时
-                string nodeExe = FindNodeExecutable(appDir);
-                if (string.IsNullOrEmpty(nodeExe))
+                // 3. 寻找服务端入口 server.js 或源码工程目录
+                string serverJs = FindServerJs(appDir);
+                string uiDir = Path.Combine(appDir, "arranger-ui");
+                string editorServerScript = Path.Combine(appDir, @"scripts\editor_server.ps1");
+
+                // 如果未找到编译后的 server.js，检查是否在源码工程目录下
+                if (string.IsNullOrEmpty(serverJs))
                 {
+                    if (Directory.Exists(uiDir) && File.Exists(editorServerScript))
+                    {
+                        // 源码工程模式：委托 scripts\editor_server.ps1 启动开发服务
+                        ProcessStartInfo psiDev = new ProcessStartInfo();
+                        psiDev.FileName = "powershell.exe";
+                        psiDev.Arguments = string.Format("-NoProfile -ExecutionPolicy Bypass -File \"{0}\" -Mode start", editorServerScript);
+                        psiDev.WorkingDirectory = appDir;
+                        psiDev.UseShellExecute = false;
+                        psiDev.CreateNoWindow = true;
+                        psiDev.WindowStyle = ProcessWindowStyle.Hidden;
+
+                        Process devProc = Process.Start(psiDev);
+                        if (devProc != null)
+                        {
+                            devProc.WaitForExit();
+                            if (devProc.ExitCode == 0)
+                            {
+                                return;
+                            }
+                        }
+
+                        MessageBox.Show(
+                            "开发服务启动失败，请在终端执行下列命令查看输出：\n\npowershell -File scripts\\editor_server.ps1 -Mode start",
+                            "舞立方谱面编辑器 - 源码模式启动失败",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+                        return;
+                    }
+
                     MessageBox.Show(
-                        "未找到 Node.js 运行环境。\n\n请确保：\n1. 系统中已安装 Node.js (v18.18+) 并加入 PATH；\n2. 或在发布包 bin 目录下放置 node.exe 便携版。",
-                        "舞立方谱面编辑器 - 缺少 Node 运行时",
+                        "未找到服务端入口 server.js 或源码工程目录 arranger-ui。\n\n请检查：\n1. 如果是绿色便携版，请完整解压压缩包，确保 server 文件夹与本程序在同级目录；\n2. 如果是快捷方式，请检查快捷方式的【起始位置】是否设置为安装目录。\n\n当前目录：\n" + appDir,
+                        "舞立方谱面编辑器 - 启动失败",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error
                     );
                     return;
                 }
 
-                // 4. 寻找 server.js 入口
-                string serverJs = FindServerJs(appDir);
-                if (string.IsNullOrEmpty(serverJs))
+                // 4. Standalone 模式：寻找 Node.js 运行时
+                string nodeExe = FindNodeExecutable(appDir);
+                if (string.IsNullOrEmpty(nodeExe))
                 {
                     MessageBox.Show(
-                        "未找到服务端入口 server.js。\n请先运行打包脚本编译产物，或检查安装目录是否完整。",
-                        "舞立方谱面编辑器 - 启动失败",
+                        "未找到 Node.js 运行环境。\n\n请确保：\n1. 系统中已安装 Node.js (v18.18+) 并加入 PATH；\n2. 或在发布包 bin 目录下放置 node.exe 便携版。",
+                        "舞立方谱面编辑器 - 缺少 Node 运行时",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error
                     );

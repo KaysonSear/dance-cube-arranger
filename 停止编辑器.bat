@@ -1,4 +1,5 @@
-@echo off
+﻿@echo off
+@chcp 65001 >nul 2>&1
 setlocal enableextensions
 title 停止舞立方谱面编辑器
 cd /d "%~dp0"
@@ -14,9 +15,9 @@ set "_RC=%errorlevel%"
 
 echo.
 if "%_RC%"=="0" (
-  echo [OK] 服务已成功停止并释放端口。
+    echo [OK] 服务已成功停止并释放端口。
 ) else (
-  echo [FAILED] 退出码 %_RC%。服务可能未在运行或状态文件缺失。
+    echo [FAILED] 退出码 %_RC%。服务可能未在运行或状态文件缺失。
 )
 echo.
 timeout /t 2 /nobreak >nul 2>&1

@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 setlocal enableextensions enabledelayedexpansion
 title Dance Cube Arranger Auto Updater
 chcp 65001 >nul 2>&1
