@@ -2262,6 +2262,14 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       return next;
     });
   }, []);
+  const deselectSegment = useCallback((id: string) => {
+    setSelectedSegmentIds((previous) => {
+      if (!previous.has(id)) return previous;
+      const next = new Set(previous);
+      next.delete(id);
+      return next;
+    });
+  }, []);
 
   // 引擎就绪且工程已 hydrate → 恢复保存的播放头(仅一次)。速度/音量由下方 per-value 副作用负责。
   const restoredRef = useRef(false);
@@ -2566,6 +2574,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
             clock={clock}
             selectedSegmentIds={selectedSegmentIds}
             onToggleSegment={toggleSegment}
+            onDeselectSegment={deselectSegment}
             onChange={onStructureChange}
             pendingInSec={pendingInSec}
             onSetIn={setInPoint}

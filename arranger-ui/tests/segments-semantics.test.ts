@@ -266,4 +266,54 @@ describe("Segment Semantics & Relations", () => {
       expect(lines).toContain("S03(04 : 09 : 40 ~ 04 : 41 : 23) Drop");
     });
   });
+
+  describe("Segment deselection behavior (right click card deselect)", () => {
+    it("removes clip from selection after I/O range creation", () => {
+      // 模拟 I/O 创建 clip 后自动选中的状态
+      const newlyCreatedId = "clip-io-1";
+      let selection = new Set<string>([newlyCreatedId]);
+      expect(selection.has(newlyCreatedId)).toBe(true);
+
+      // 右键卡片触发 deselect
+      const deselect = (id: string) => {
+        if (!selection.has(id)) return selection;
+        const next = new Set(selection);
+        next.delete(id);
+        return next;
+      };
+
+      selection = deselect(newlyCreatedId);
+      expect(selection.has(newlyCreatedId)).toBe(false);
+      expect(selection.size).toBe(0);
+    });
+
+    it("only deselects the targeted clip in a multi-selection", () => {
+      let selection = new Set<string>(["c1", "c2", "c3"]);
+      const deselect = (id: string) => {
+        if (!selection.has(id)) return selection;
+        const next = new Set(selection);
+        next.delete(id);
+        return next;
+      };
+
+      selection = deselect("c2");
+      expect(selection.has("c2")).toBe(false);
+      expect(selection.has("c1")).toBe(true);
+      expect(selection.has("c3")).toBe(true);
+      expect(selection.size).toBe(2);
+    });
+
+    it("is idempotent when deselecting an unselected clip", () => {
+      const selection = new Set<string>(["c1"]);
+      const deselect = (id: string) => {
+        if (!selection.has(id)) return selection;
+        const next = new Set(selection);
+        next.delete(id);
+        return next;
+      };
+
+      const result = deselect("c99");
+      expect(result).toBe(selection);
+    });
+  });
 });

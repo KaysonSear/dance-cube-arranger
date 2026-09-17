@@ -1022,6 +1022,16 @@ function ShortcutsSection() {
               <td className="px-3.5 py-2">左右水平镜像选中 Clip 内的所有排键</td>
             </tr>
             <tr>
+              <td className="px-3.5 py-2 font-medium text-ink">Clip起止打点</td>
+              <td className="px-3.5 py-2"><KeyBadge>I</KeyBadge> / <KeyBadge>O</KeyBadge></td>
+              <td className="px-3.5 py-2">单按 I 设置起点，单按 O 设置终点并完成创建（自动选中该 Clip）</td>
+            </tr>
+            <tr>
+              <td className="px-3.5 py-2 font-medium text-ink">取消选中Clip</td>
+              <td className="px-3.5 py-2"><KeyBadge>右键卡片</KeyBadge></td>
+              <td className="px-3.5 py-2">右键单击右侧面板的 Clip 卡片，即可直接取消选中该 Clip</td>
+            </tr>
+            <tr>
               <td className="px-3.5 py-2 font-medium text-ink">Clip关系配对</td>
               <td className="px-3.5 py-2"><KeyBadge>Shift + R / U / V</KeyBadge></td>
               <td className="px-3.5 py-2">多选 Clip 标记重复 (R)、升级 (U，1对多) 或变奏 (V，严格1对1)</td>

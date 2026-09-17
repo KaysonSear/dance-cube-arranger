@@ -35,6 +35,7 @@ export interface SegmentsPanelProps {
   clock: AudioClock;
   selectedSegmentIds: Set<string>;
   onToggleSegment(id: string): void;
+  onDeselectSegment?(id: string): void;
   onChange(structure: SegmentStructureV3): void;
   pendingInSec: number | null;
   onSetIn(): void;
@@ -60,6 +61,7 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
     clock,
     selectedSegmentIds,
     onToggleSegment,
+    onDeselectSegment,
     onChange,
     pendingInSec,
     onSetIn,
@@ -347,6 +349,26 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
                     onToggleSegment(segment.id);
                   }
                 }}
+                onContextMenu={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (target.tagName === "INPUT") {
+                    return;
+                  }
+                  event.preventDefault();
+                  if (selectedSegmentIds.has(segment.id)) {
+                    if (onDeselectSegment) {
+                      onDeselectSegment(segment.id);
+                    } else {
+                      onToggleSegment(segment.id);
+                    }
+                    onToast(`已取消选中 ${segment.code}`);
+                  }
+                }}
+                title={
+                  selected
+                    ? `右键单击取消选中 ${segment.code} · 按住 Ctrl 单击多选/切换`
+                    : "按住 Ctrl 单击选中"
+                }
                 className="rounded-xl p-2 shadow-ring transition-colors"
                 style={{
                   backgroundColor: cardBg,
@@ -460,7 +482,7 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
             <div className="text-[10px] text-stone leading-relaxed border-t border-hairline pt-1">
               <div>• 关系配对：Shift+R 重复 · Shift+U 升级 · Shift+V 变奏 (1对1)</div>
               <div>• 角色语义：Shift+I Intro · Shift+O Outro · Shift+D Drop · Shift+B Build-Up · Shift+K Break</div>
-              <div>• 清除语义：Shift+Delete / Shift+Backspace 恢复为普通 Clip</div>
+              <div>• 选中操作：Ctrl+左键 多选/切换 · 右键卡片 取消选中 · Shift+Delete 清除语义</div>
             </div>
           </div>
           {structure.relations.length === 0 ? (

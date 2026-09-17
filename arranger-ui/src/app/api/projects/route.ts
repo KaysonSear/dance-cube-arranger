@@ -189,6 +189,9 @@ export async function GET(req: Request) {
   ) ?? registry.managedProjects.find((p) =>
     p.sourcePath && isProtectedWda(p.sourcePath)
   );
+  if (wdaProject && registry.hiddenProjects.includes(wdaProject.id)) {
+    registry.hiddenProjects = registry.hiddenProjects.filter((id) => id !== wdaProject.id);
+  }
   const wdaDefaultSrc = wdaProject && wdaProject.charts.length > 0
     ? managedSrc(wdaProject.id, wdaProject.charts[0].id)
     : "";
