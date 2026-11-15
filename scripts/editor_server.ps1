@@ -34,7 +34,10 @@ function Get-EditorHealth([int]$Port) {
             try { return $reader.ReadToEnd() | ConvertFrom-Json }
             finally { $reader.Dispose() }
         } finally { $response.Dispose() }
-    } catch { return $null }
+    } catch {
+        $script:healthFailure = $_.Exception.Message
+        return $null
+    }
 }
 
 function Test-EditorProcess([int]$ProcessId) {
@@ -153,6 +156,7 @@ try {
     Add-Content -LiteralPath $StartupLog -Value "[STARTING] Port $port; Node $version"
     $launcher = Start-Process -FilePath $node -ArgumentList $arguments -WorkingDirectory $working -RedirectStandardOutput $StdoutLog -RedirectStandardError $StderrLog -WindowStyle Hidden -PassThru
     $deadline = [DateTime]::UtcNow.AddSeconds(120)
+    $lastHealth = ""
     while ([DateTime]::UtcNow -lt $deadline -and -not $launcher.HasExited) {
         $health = Get-EditorHealth $port
         if ($health.ok -and ($health.pid -eq $launcher.Id -or (-not $Standalone -and (Test-EditorProcess $health.pid)))) {
@@ -160,6 +164,11 @@ try {
             Add-Content -LiteralPath $StartupLog -Value "[READY] Port $port; PID $($health.pid); Version $($health.version)"
             Open-Editor $port
             exit 0
+        }
+        $healthDetail = if ($health) { "Expected PID $($launcher.Id); received PID $($health.pid)" } else { $script:healthFailure }
+        if ($healthDetail -and $healthDetail -ne $lastHealth) {
+            Add-Content -LiteralPath $StartupLog -Value "[START_PROBE] $healthDetail"
+            $lastHealth = $healthDetail
         }
         Start-Sleep -Milliseconds 500
     }
