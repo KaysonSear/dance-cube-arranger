@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { UpdateInfo } from "@/lib/version";
+import { APP_VERSION, type UpdateInfo } from "@/lib/version";
+import ProjectLoadNotice from "./ProjectLoadNotice";
 
 export interface UpdateDialogProps {
   open: boolean;
@@ -20,6 +21,8 @@ interface UpgradeProgress {
   percent: number;
   message: string;
   error?: string;
+  code?: string;
+  diagnosticId?: string;
 }
 
 export default function UpdateDialog({
@@ -36,12 +39,11 @@ export default function UpdateDialog({
     message: "",
   });
   const [isRestarting, setIsRestarting] = useState(false);
-  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const probeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => requestRef.current?.abort(), []);
 
   const handleClose = useCallback(() => {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    if (probeTimerRef.current) clearInterval(probeTimerRef.current);
+    requestRef.current?.abort();
     setProgress({ stage: "idle", percent: 0, message: "" });
     setIsRestarting(false);
     onClose();
@@ -59,109 +61,80 @@ export default function UpdateDialog({
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      if (probeTimerRef.current) clearInterval(probeTimerRef.current);
     };
   }, [open, progress.stage, isRestarting, handleClose]);
 
   if (!open) return null;
 
-  // 触发一键全自动升级
   const handleAutoUpgrade = async () => {
-    if (!updateInfo) return;
-
-    setProgress({ stage: "downloading", percent: 0, message: "正在发起更新任务..." });
+    if (!updateInfo || requestRef.current) return;
+    const operation = new AbortController();
+    requestRef.current = operation;
+    const started = performance.now();
+    const version = updateInfo.latestVersion.replace(/^v/i, "");
+    const boundedFetch = (url: string, init?: RequestInit) =>
+      fetch(url, { ...init, signal: AbortSignal.any([operation.signal, AbortSignal.timeout(4500)]) });
+    const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+    setProgress({ stage: "downloading", percent: 0, message: "正在发起更新任务" });
 
     try {
-      const res = await fetch("/api/update/apply", {
+      const res = await boundedFetch("/api/update/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          downloadUrl: updateInfo.downloadUrl || updateInfo.htmlUrl,
+          downloadUrl: updateInfo.downloadUrl,
           targetVersion: updateInfo.latestVersion,
           mock: updateInfo.downloadUrl?.includes("mock") || false,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(String(data.error ?? "启动自动升级失败"));
+        setProgress({ stage: "error", message: "更新失败", percent: 0, error: data.error, code: data.code, diagnosticId: data.diagnosticId });
+        return;
       }
-
-      // 启动进度轮询
-      startProgressPolling();
-    } catch (err) {
-      setProgress({
-        stage: "error",
-        percent: 0,
-        message: "更新失败",
-        error: (err as Error).message,
-      });
+      let failedPolls = 0;
+      while (!operation.signal.aborted && performance.now() - started < 32 * 60_000) {
+        await pause(600);
+        try {
+          const reply = await boundedFetch("/api/update/apply");
+          if (!reply.ok) throw new Error(`HTTP ${reply.status}`);
+          const { status } = await reply.json() as { status: UpgradeProgress };
+          if (operation.signal.aborted) return;
+          setProgress(status);
+          if (status.stage === "error") return;
+          if (status.stage === "applying") break;
+          failedPolls = 0;
+        } catch {
+          if (++failedPolls >= 3) break;
+        }
+      }
+      if (operation.signal.aborted) return;
+      setIsRestarting(true);
+      const restartDeadline = performance.now() + 120_000;
+      while (!operation.signal.aborted && performance.now() < restartDeadline) {
+        await pause(1000);
+        try {
+          const reply = await boundedFetch("/api/health");
+          if (!reply.ok) continue;
+          const health = await reply.json() as { version?: string };
+          if (health.version === version) { window.location.reload(); return; }
+          const stateReply = await boundedFetch("/api/update/apply");
+          if (!stateReply.ok) continue;
+          const { status } = await stateReply.json() as { status: UpgradeProgress };
+          if (status.stage === "error") { setProgress(status); return; }
+        } catch { /* Server is between processes. */ }
+      }
+      if (!operation.signal.aborted) {
+        setProgress({ stage: "error", percent: 0, code: "UPDATE_RESTART_TIMEOUT",
+          message: "更新未确认", error: "请查看 editor-update.log，或下载 ZIP 手动更新" });
+      }
+    } catch {
+      if (!operation.signal.aborted) setProgress({ stage: "error", percent: 0, code: "UPDATE_CONNECTION_FAILED",
+        message: "更新失败", error: "无法连接更新服务，请重试或下载 ZIP 手动更新" });
+    } finally {
+      if (requestRef.current === operation) requestRef.current = null;
+      if (!operation.signal.aborted) setIsRestarting(false);
     }
-  };
-
-  const startProgressPolling = () => {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-
-    pollTimerRef.current = setInterval(async () => {
-      try {
-        const res = await fetch("/api/update/apply");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.ok && data.status) {
-          const st = data.status as UpgradeProgress;
-          setProgress(st);
-
-          if (st.stage === "ready" || st.stage === "applying") {
-            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-            startRestartAndProbe();
-          } else if (st.stage === "error") {
-            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-          }
-        }
-      } catch {
-        // 服务端可能已在重启，直接转入探活重连阶段
-        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-        startRestartAndProbe();
-      }
-    }, 400);
-  };
-
-  const startRestartAndProbe = () => {
-    setIsRestarting(true);
-    setProgress({
-      stage: "restarting",
-      percent: 100,
-      message: "更新完成，正在自动重启排键器服务...",
-    });
-
-    let attempts = 0;
-    if (probeTimerRef.current) clearInterval(probeTimerRef.current);
-
-    probeTimerRef.current = setInterval(async () => {
-      attempts++;
-      try {
-        const probeRes = await fetch(`/api/update/check?t=${Date.now()}`);
-        if (probeRes.ok) {
-          if (probeTimerRef.current) clearInterval(probeTimerRef.current);
-          // 重新连接成功，原地刷新页面！
-          setTimeout(() => {
-            window.location.reload();
-          }, 600);
-        }
-      } catch {
-        // 尚未拉起，继续等待
-      }
-
-      if (attempts > 40) {
-        if (probeTimerRef.current) clearInterval(probeTimerRef.current);
-        setProgress({
-          stage: "error",
-          percent: 100,
-          message: "服务重启稍慢，请尝试手动刷新网页或运行 启动编辑器.exe",
-        });
-        setIsRestarting(false);
-      }
-    }, 1000);
   };
 
   const hasUpdate = updateInfo?.hasUpdate ?? false;
@@ -187,7 +160,7 @@ export default function UpdateDialog({
                 {isRestarting ? "正在重启服务..." : hasUpdate ? "发现新版本可用" : "软件版本信息"}
               </h2>
               <p className="text-[11px] text-stone">
-                当前版本：v{updateInfo?.currentVersion ?? "260915"}
+                当前版本：v{updateInfo?.currentVersion ?? APP_VERSION}
               </p>
             </div>
           </div>
@@ -226,7 +199,7 @@ export default function UpdateDialog({
 
               {isRestarting ? (
                 <div className="rounded-xl border border-coral/30 bg-warn-wash p-3.5 text-center space-y-1 animate-pulse">
-                  <div className="text-sm font-bold text-ink">🎉 更新包已部署就绪，服务正在重启...</div>
+                  <div className="text-sm font-bold text-ink">正在确认新版服务是否就绪</div>
                   <p className="text-[11px] text-stone">
                     浏览器已在自动探活重连，页面将自动刷新，请勿关闭浏览器窗口。
                   </p>
@@ -234,7 +207,7 @@ export default function UpdateDialog({
               ) : (
                 <div className="rounded-xl border border-cream bg-parchment/60 p-3 text-[11px] text-stone space-y-1">
                   <p>💡 <b>全自动无缝升级中：</b></p>
-                  <p>• 自动下载官方构建独立包（约 16MB）；</p>
+                  <p>• 下载并校验官方便携包；</p>
                   <p>• 自动保护您的 <code className="font-mono text-ink">artifacts/</code> 目录（历史工程与排键数据 100% 保留）；</p>
                   <p>• 升级完成后自动重新拉起服务并刷新页面。</p>
                 </div>
@@ -255,9 +228,10 @@ export default function UpdateDialog({
                 <span>⚠</span>
                 <span>{progress.error ? "自动升级出错" : "无法连接更新服务器"}</span>
               </div>
-              <p className="text-[11px] leading-relaxed text-err/90">
-                {progress.error || error}
-              </p>
+              <ProjectLoadNotice issue={{
+                stage: "update", code: "NETWORK_ERROR", detailCode: progress.code ?? "UPDATE_CHECK_FAILED",
+                diagnosticId: progress.diagnosticId, status: null, elapsedMs: 0,
+              }} reason={progress.error || error || "请重试或手动更新"} />
               <p className="text-[11px] text-stone">
                 提示：若自动升级因网络或代理受限，可选择“前往 GitHub 下载”手动获取便携压缩包。
               </p>

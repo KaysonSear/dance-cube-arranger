@@ -2,7 +2,7 @@ import type { ProjectPackage } from "./projects";
 
 export const PROJECT_LOAD_TIMEOUT_MS = 10_000;
 
-export type ProjectLoadStage = "resume" | "catalog";
+export type ProjectLoadStage = "resume" | "catalog" | "geometry" | "chart" | "state" | "suggestions" | "save-dialog" | "update";
 export type ProjectLoadCode =
   | "REQUEST_TIMEOUT"
   | "NETWORK_ERROR"
@@ -15,6 +15,8 @@ export type ProjectLoadIssue = {
   code: ProjectLoadCode;
   status: number | null;
   elapsedMs: number;
+  diagnosticId?: string;
+  detailCode?: string;
 };
 
 type CatalogData = {
@@ -37,7 +39,7 @@ function hasProjectRows(value: unknown): value is ProjectPackage[] {
 }
 
 export async function loadProjectCatalog(
-  stage: ProjectLoadStage,
+  stage: "resume" | "catalog",
   signal: AbortSignal,
 ): Promise<CatalogResult> {
   const started = performance.now();
@@ -46,6 +48,7 @@ export async function loadProjectCatalog(
   signal.addEventListener("abort", cancel, { once: true });
   let timedOut = false;
   let status: number | null = null;
+  let diagnosticId: string | undefined;
   const timer = setTimeout(() => {
     timedOut = true;
     request.abort();
@@ -54,6 +57,7 @@ export async function loadProjectCatalog(
     stage,
     code,
     status,
+    diagnosticId,
     elapsedMs: Math.round(performance.now() - started),
   });
   const failed = (code: ProjectLoadCode): CatalogResult => ({ status: "failed", issue: issue(code) });
@@ -64,6 +68,7 @@ export async function loadProjectCatalog(
     const response = await fetch(url, { signal: request.signal });
     if (signal.aborted) return { status: "cancelled" };
     status = response.status;
+    diagnosticId = response.headers?.get("X-Arranger-Diagnostic-Id") ?? undefined;
     if (!response.ok) return failed("HTTP_ERROR");
 
     let data: unknown;

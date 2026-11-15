@@ -158,6 +158,7 @@ export class AudioEngine {
   private subs = new Set<(t: number) => void>();
   private raf = 0;
   private disposed = false;
+  private readonly requests = new AbortController();
 
   constructor(private cb: EngineCallbacks) {}
 
@@ -220,9 +221,13 @@ export class AudioEngine {
     this.kickGain.gain.value = this.kickVol;
 
     await this.ensureWorklet();
-    if (!this.workletReady) await this.loadFallbackShifter(); // worklet 失败 → 备好真回退
-    const arr = await (await fetch(audioUrl)).arrayBuffer();
-    this.buffer = this.ensureStereo(await this.ctx.decodeAudioData(arr));
+    this.requests.signal.throwIfAborted();
+    if (!this.workletReady) await this.loadFallbackShifter();
+    const response = await fetch(audioUrl, { signal: AbortSignal.any([this.requests.signal, AbortSignal.timeout(30_000)]) });
+    if (!response.ok) throw new Error(`音频请求失败 (HTTP ${response.status})`);
+    const decoded = await this.ctx.decodeAudioData(await response.arrayBuffer());
+    this.requests.signal.throwIfAborted();
+    this.buffer = this.ensureStereo(decoded);
     this._duration = this.buffer.duration;
     this.buildShifter();
     void this.loadKick(kickUrl);
@@ -544,7 +549,7 @@ export class AudioEngine {
   private async loadKick(url: string): Promise<void> {
     if (!this.ctx) return;
     try {
-      const arr = await (await fetch(url)).arrayBuffer();
+      const arr = await (await fetch(url, { signal: this.requests.signal })).arrayBuffer();
       this.kickBuffer = await this.ctx.decodeAudioData(arr);
       this.kickSampleOnset = this.computeSampleOnset(this.kickBuffer);
     } catch (err) {
@@ -823,6 +828,7 @@ export class AudioEngine {
   dispose(): void {
     if (this.disposed) return; // 幂等
     this.disposed = true;
+    this.requests.abort();
     this.shuttle = null;
     this.resumeAfterShuttle = false;
     this.auditionAfterShuttle = false;

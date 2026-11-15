@@ -95,7 +95,7 @@ function runBridge(root: string, manifest: string): Promise<{
     child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
     child.on("error", (error) => {
       clearTimeout(timer);
-      resolve({ code: null, stdout, stderr: `${stderr}\n${String(error)}`, timedOut });
+      resolve({ code: null, stdout, stderr: `无法启动 Python：${String(error)}`, timedOut });
     });
     child.on("close", (code) => {
       clearTimeout(timer);
@@ -206,7 +206,8 @@ export async function POST(req: Request) {
     if (run.timedOut || run.code !== 0 || !bridge?.ok) {
       return NextResponse.json({
         ok: false,
-        error: run.timedOut ? "MCZ 导出超时" : String(bridge?.error ?? `导出桥退出码 ${run.code}`),
+        code: run.timedOut ? "PYTHON_TIMEOUT" : run.code === null ? "PYTHON_START_FAILED" : "MCZ_EXPORT_FAILED",
+        error: run.timedOut ? "MCZ 导出超时" : String(bridge?.error ?? (run.code === null ? "无法启动 Python，请检查运行时配置" : `导出桥退出码 ${run.code}`)),
         stderr: run.stderr.slice(-2000),
       }, { status: 500 });
     }

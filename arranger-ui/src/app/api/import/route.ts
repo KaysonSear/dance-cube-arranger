@@ -29,15 +29,20 @@ function unpackMcz(root: string, mczRel: string, outRel: string): Promise<Record
     const child = spawn(
       resolvePythonCommand(root),
       ["scripts/import_mcz.py", "--mcz", mczRel, "--out-dir", outRel],
-      { cwd: root },
+      { cwd: root, windowsHide: true },
     );
     let stdout = "";
     let stderr = "";
-    const timer = setTimeout(() => child.kill("SIGKILL"), 120_000);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill();
+    }, 120_000);
     child.stdout.on("data", (d: Buffer) => (stdout += d.toString()));
     child.stderr.on("data", (d: Buffer) => (stderr += d.toString()));
     child.on("close", () => {
       clearTimeout(timer);
+      if (timedOut) { resolve({ ok: false, error: "Python 解包超时 (PYTHON_TIMEOUT)" }); return; }
       const last = stdout.trim().split("\n").filter(Boolean).pop() ?? "";
       try {
         resolve(JSON.parse(last));
@@ -47,7 +52,7 @@ function unpackMcz(root: string, mczRel: string, outRel: string): Promise<Record
     });
     child.on("error", (err) => {
       clearTimeout(timer);
-      resolve({ ok: false, error: String(err) });
+      resolve({ ok: false, error: `无法启动 Python (PYTHON_START_FAILED)：${String(err)}` });
     });
   });
 }

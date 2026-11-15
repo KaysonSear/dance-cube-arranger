@@ -1,6 +1,6 @@
 ﻿@echo off
 @chcp 65001 >nul 2>&1
-setlocal enableextensions
+setlocal EnableExtensions DisableDelayedExpansion
 title 舞立方谱面编辑器
 cd /d "%~dp0"
 

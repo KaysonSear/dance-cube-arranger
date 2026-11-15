@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { diagnosticError } from "@/lib/server/diagnostics";
+
 import type { WorkingStateV1 } from "@/lib/persist-types";
 import { resolveSrc } from "@/lib/server/paths";
 import { readRegistry, readState, saveRegistry, saveState } from "@/lib/server/store";
@@ -7,11 +9,15 @@ import { readRegistry, readState, saveRegistry, saveState } from "@/lib/server/s
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const sr = resolveSrc(req);
-  if (!sr.ok) return NextResponse.json({ error: sr.error }, { status: sr.status });
-  const state = readState(sr.key);
-  if (!state) return new Response(null, { status: 204 });
-  return NextResponse.json(state, { headers: { "Cache-Control": "no-store" } });
+  try {
+    const sr = resolveSrc(req);
+    if (!sr.ok) return diagnosticError("PROJECT_SOURCE_UNAVAILABLE", "找不到可读取的工程谱面", sr.status, sr.error);
+    const state = readState(sr.key, { strict: true });
+    if (!state) return new Response(null, { status: 204 });
+    return NextResponse.json(state, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    return diagnosticError("STATE_READ_FAILED", "已保存进度无法读取，请检查权限或备份后检查存档", 500, error);
+  }
 }
 
 /** POST(而非 PUT)以兼容 pagehide 时的 navigator.sendBeacon 兜底保存。 */

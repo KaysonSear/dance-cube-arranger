@@ -89,6 +89,8 @@ describe("AudioEngine audition kick suppression", () => {
     };
     (globalThis as unknown as { AudioWorkletNode: unknown }).AudioWorkletNode = FakeAudioWorkletNode;
     globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
       arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024)),
     }) as unknown as typeof fetch;
     globalThis.requestAnimationFrame = vi.fn().mockReturnValue(1);

@@ -69,8 +69,17 @@ export function snapshotsDir(key: string): string {
   return path.join(projectDir(key), "snapshots");
 }
 
-export function readState(key: string): WorkingStateV1 | null {
-  return readJsonIfExists<WorkingStateV1>(statePath(key));
+export function readState(key: string, options?: { strict: boolean }): WorkingStateV1 | null {
+  if (!options?.strict) return readJsonIfExists<WorkingStateV1>(statePath(key));
+  try {
+    const saved = JSON.parse(fs.readFileSync(statePath(key), "utf-8")) as WorkingStateV1;
+    if (saved?.schema !== 1 || !saved.assignments || typeof saved.assignments !== "object" ||
+      Array.isArray(saved.assignments)) throw new Error("Invalid saved state");
+    return saved;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
 }
 
 export function saveState(key: string, state: WorkingStateV1): void {

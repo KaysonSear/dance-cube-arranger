@@ -119,6 +119,8 @@ import {
 } from "@/lib/simulator-input";
 
 import BlankChartDialog from "./BlankChartDialog";
+import ProjectLoadNotice from "./ProjectLoadNotice";
+import { ProjectRequestError, requestProjectData } from "@/lib/project-request";
 import ExportPanel from "./ExportPanel";
 import HelpDialog from "./HelpDialog";
 import HexPreview from "./HexPreview";
@@ -179,7 +181,9 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
   const [savedState, setSavedState] = useState<WorkingStateV1 | null>(null);
   const [suggestedSections, setSuggestedSections] = useState<SuggestedSection[]>([]);
   const [phase, setPhase] = useState<Phase>("loading");
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<ProjectRequestError | null>(null);
+  const [suggestionsError, setSuggestionsError] = useState<ProjectRequestError | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [shaMismatch, setShaMismatch] = useState(false);
 
   // ── 编辑状态 ──
@@ -440,46 +444,38 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     [clearSimulatorTimers, publishSimulatorGesture, toast],
   );
 
-  // ── 初始加载:geometry + chart + state 并行(chart/state 按工程 ?src) ──
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
+    const attempt = new AbortController();
+    const signal = attempt.signal;
+    void (async () => {
       try {
-        const [geoRes, chartRes, stateRes, suggestionsRes] = await Promise.all([
-          fetch("/api/geometry"),
-          fetch(`/api/chart${q}`),
-          fetch(`/api/state${q}`),
-          fetch(`/api/structure-suggestions${q}`).catch(() => null),
+        const [geo, source, saved] = await Promise.all([
+          requestProjectData("geometry", "/api/geometry", signal, async (response) =>
+            parseGeometry(await response.json())),
+          requestProjectData("chart", `/api/chart${q}`, signal, async (response) => {
+            const { path, text, sourceSha1 } = await response.json();
+            if (typeof path !== "string" || typeof text !== "string" || typeof sourceSha1 !== "string") {
+              throw new Error("Invalid chart payload");
+            }
+            return { path, sourceSha1, parsed: parseMc(text) };
+          }),
+          requestProjectData("state", `/api/state${q}`, signal, async (response) => {
+            if (response.status === 204) return null;
+            const saved = (await response.json()) as WorkingStateV1;
+            if (saved?.schema !== 1 || !saved.assignments || typeof saved.assignments !== "object" ||
+              Array.isArray(saved.assignments)) throw new Error("Invalid saved state");
+            return saved;
+          }),
         ]);
-        if (!geoRes.ok) throw new Error(`geometry 加载失败 (${geoRes.status})`);
-        if (!chartRes.ok) {
-          const err = await chartRes.json().catch(() => null);
-          throw new Error(String(err?.error ?? `谱面加载失败 (${chartRes.status})`));
-        }
-        const geo = parseGeometry(await geoRes.json());
-        const { path, text, sourceSha1 } = (await chartRes.json()) as {
-          path: string;
-          text: string;
-          sourceSha1: string;
-        };
-        const parsed = parseMc(text);
-        let saved: WorkingStateV1 | null = null;
-        if (stateRes.status === 200) saved = (await stateRes.json()) as WorkingStateV1;
-        let suggestions: SuggestedSection[] = [];
-        if (suggestionsRes?.ok) {
-          const body = (await suggestionsRes.json()) as { sections?: SuggestedSection[] };
-          if (Array.isArray(body.sections)) suggestions = body.sections;
-        }
-        if (cancelled) return;
+        if (signal.aborted) return;
         setGeometry(geo);
-        setChart(parsed);
-        setSourceInfo({ path, sha1: sourceSha1 });
+        setChart(source.parsed);
+        setSourceInfo({ path: source.path, sha1: source.sourceSha1 });
         setSavedState(saved);
-        setSuggestedSections(suggestions);
-        if (saved && saved.sourceSha1 === sourceSha1) {
-          hydrate(parsed, saved);
+        if (saved && saved.sourceSha1 === source.sourceSha1) {
+          hydrate(source.parsed, saved);
           setPhase("ready");
-        } else if (!saved && parsed.gameplay.length === 0) {
+        } else if (!saved && source.parsed.gameplay.length === 0) {
           setSourceMode("real");
           setAssignments({});
           undoRef.current = new UndoStack<EditorSnapshot>({ assignments: {}, addedOnsets: [], deletedOnsetIds: [] });
@@ -488,18 +484,26 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
           setShaMismatch(saved !== null);
           setPhase("dialog");
         }
-      } catch (e) {
-        if (!cancelled) {
-          setLoadError((e as Error).message);
-          setPhase("error");
-        }
+      } catch (error) {
+        if (signal.aborted) return;
+        setLoadError(error instanceof ProjectRequestError ? error : new ProjectRequestError({
+          stage: "state", code: "INVALID_RESPONSE", status: null, elapsedMs: 0,
+        }));
+        setPhase("error");
+        attempt.abort();
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void requestProjectData("suggestions", `/api/structure-suggestions${q}`, signal, async (response) => {
+      const body = (await response.json()) as { sections?: SuggestedSection[] };
+      if (!Array.isArray(body?.sections)) throw new Error("Invalid suggestions payload");
+      return body.sections;
+    }).then((sections) => {
+      if (!signal.aborted) setSuggestedSections(sections);
+    }).catch((error: unknown) => {
+      if (!signal.aborted && error instanceof ProjectRequestError) setSuggestionsError(error);
+    });
+    return () => attempt.abort();
+  }, [q, loadAttempt]);
 
   function hydrate(parsed: ParsedChart, saved: WorkingStateV1) {
     // 顺序关键:必须先把新增采音点并入并剔除被删除采音点,否则其上的指派会被当作"未知 onsetId"净化丢弃
@@ -2349,12 +2353,27 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
 
   // ── 渲染 ──
   if (phase === "loading") {
-    return <Center>正在加载谱面与几何配置…</Center>;
+    return (
+      <Center>
+        <p role="status">正在加载谱面与几何配置…</p>
+        <button type="button" className="underline" onClick={onExit}>返回工程列表</button>
+      </Center>
+    );
   }
   if (phase === "error" || !chart || !geometry || !timing) {
     return (
       <Center>
-        <span className="text-err">加载失败:{loadError ?? "未知错误"}</span>
+        {loadError
+          ? <ProjectLoadNotice issue={loadError.issue} reason={loadError.reason} />
+          : <span className="text-err">工程数据无法加载</span>}
+        <button type="button" className="mx-2 underline" onClick={() => {
+          setLoadError(null);
+          setSuggestionsError(null);
+          setSuggestedSections([]);
+          setPhase("loading");
+          setLoadAttempt((attempt) => attempt + 1);
+        }}>重试</button>
+        <button type="button" className="mx-2 underline" onClick={onExit}>返回工程列表</button>
       </Center>
     );
   }
@@ -2465,6 +2484,9 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
           if (uiRef.current.simulatorMode) commitSimulatorText(text);
         }}
       />
+      {suggestionsError && (
+        <ProjectLoadNotice issue={suggestionsError.issue} reason={suggestionsError.reason} />
+      )}
       {clock.error && (
         <div className="border-b border-cream bg-warn-wash px-3 py-1 text-xs text-warn-ink">
           无音频预览({clock.error})—— 仍可排键；统一 .mcz 导出需要工程内恰好一份音频与封面。

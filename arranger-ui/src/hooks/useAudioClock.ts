@@ -67,7 +67,7 @@ export function useAudioClock(audioUrl: string): AudioClock {
     setReady(false);
     setError(null);
     engine.load(audioUrl, KICK_URL).catch((e: unknown) => {
-      setError((e as Error)?.message ?? "音频引擎初始化失败");
+      if (engineRef.current === engine) setError((e as Error)?.message ?? "音频引擎初始化失败");
     });
     // 诊断入口(控制台):__kickDiag() 快照 / __kickLeakTest() 暂停态泄漏测试
     const w = window as unknown as Record<string, unknown>;

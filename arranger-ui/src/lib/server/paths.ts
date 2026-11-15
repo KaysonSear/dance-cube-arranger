@@ -53,6 +53,8 @@ export function resolvePythonCommand(root = findRepoRoot()): string {
   if (process.env.PYTHON_EXECUTABLE) return process.env.PYTHON_EXECUTABLE;
   if (process.env.ARRANGING_PYTHON) return process.env.ARRANGING_PYTHON;
 
+  if (process.env.ARRANGER_USE_SYSTEM_RUNTIME === "1") return "python";
+
   const binPythonDir = path.join(root, "bin", "python", "python.exe");
   if (fs.existsSync(binPythonDir)) return binPythonDir;
 

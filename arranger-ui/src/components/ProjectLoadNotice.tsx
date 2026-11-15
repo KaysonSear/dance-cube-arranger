@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import type { ProjectLoadCode, ProjectLoadIssue } from "@/lib/project-catalog";
+import type { ProjectLoadCode, ProjectLoadIssue, ProjectLoadStage } from "@/lib/project-catalog";
 import { APP_VERSION } from "@/lib/version";
 
 const reasons: Record<ProjectLoadCode, string> = {
@@ -13,18 +13,30 @@ const reasons: Record<ProjectLoadCode, string> = {
   WDA_IMPORT_FAILED: "WDA 示例工程导入失败",
 };
 
-export default function ProjectLoadNotice({ issue }: { issue: ProjectLoadIssue }) {
+const phases: Record<ProjectLoadStage, string> = {
+  resume: "恢复上次工程",
+  catalog: "加载工程列表",
+  geometry: "读取键位几何配置",
+  chart: "打开谱面",
+  state: "读取已保存进度",
+  suggestions: "加载结构建议",
+  "save-dialog": "选择保存位置",
+  update: "检查或应用更新",
+};
+
+export default function ProjectLoadNotice({ issue, reason }: { issue: ProjectLoadIssue; reason?: string }) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
-  const phase = issue.stage === "resume" ? "恢复上次工程" : "加载工程列表";
+  const phase = phases[issue.stage];
   const message = issue.code === "WDA_IMPORT_FAILED"
     ? reasons[issue.code]
-    : `${phase}失败：${reasons[issue.code]}`;
+    : `${phase}失败：${reason ?? reasons[issue.code]}`;
   const details = [
     `版本 v${APP_VERSION}`,
     `阶段 ${phase}`,
-    `错误码 ${issue.code}`,
+    `错误码 ${issue.detailCode ?? issue.code}`,
     `HTTP 状态 ${issue.status ?? "未收到响应"}`,
     `耗时 ${issue.elapsedMs} ms`,
+    ...(issue.diagnosticId ? [`日志编号 ${issue.diagnosticId}`] : []),
   ].join("\n");
 
   async function copyDetails() {

@@ -180,7 +180,7 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as e:  # noqa: BLE001 — 单行 JSON 错误契约给 Node 路由解析
         print(json.dumps({"ok": False, "error": f"{type(e).__name__}: {e}"}))
         return 1
-    print(json.dumps(report, ensure_ascii=False))
+    print(json.dumps(report))
     return 0
 
 

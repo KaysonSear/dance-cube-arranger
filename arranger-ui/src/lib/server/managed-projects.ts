@@ -39,7 +39,7 @@ export function normalizeAbsolutePath(raw: unknown):
   | { ok: false; error: string } {
   if (typeof raw !== "string" || !raw.trim()) return { ok: false, error: "路径不能为空" };
   const value = raw.trim();
-  if (!path.win32.isAbsolute(value)) return { ok: false, error: "必须使用绝对盘符或 UNC 路径" };
+  if (!/^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+)/.test(value) || !path.win32.isAbsolute(value)) return { ok: false, error: "必须使用绝对盘符或 UNC 路径" };
   return { ok: true, path: path.win32.normalize(value) };
 }
 
@@ -108,18 +108,23 @@ function unpackMcz(root: string, source: string, workspace: string): Promise<Rec
     );
     let stdout = "";
     let stderr = "";
-    const timer = setTimeout(() => child.kill(), 120_000);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill();
+    }, 120_000);
     child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
     child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
     child.on("close", () => {
       clearTimeout(timer);
+      if (timedOut) { resolve({ ok: false, error: "Python 解包超时 (PYTHON_TIMEOUT)" }); return; }
       const last = stdout.trim().split(/\r?\n/).filter(Boolean).pop() ?? "";
       try { resolve(JSON.parse(last)); }
       catch { resolve({ ok: false, error: stderr.slice(-1000) || "解包程序未返回有效结果" }); }
     });
     child.on("error", (error) => {
       clearTimeout(timer);
-      resolve({ ok: false, error: String(error) });
+      resolve({ ok: false, error: `无法启动 Python (PYTHON_START_FAILED)：${String(error)}` });
     });
   });
 }

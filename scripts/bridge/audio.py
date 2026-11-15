@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -17,7 +18,7 @@ def _find_executable(name: str) -> str:
         return found
     repo_root = Path(__file__).resolve().parent.parent.parent
     candidate = repo_root / "bin" / (name if name.endswith(".exe") else f"{name}.exe")
-    if candidate.is_file():
+    if os.environ.get("ARRANGER_USE_SYSTEM_RUNTIME") != "1" and candidate.is_file():
         return str(candidate)
     return name
 
@@ -48,7 +49,7 @@ def encode_ogg(src_audio_path: Path | str, out_ogg_path: Path | str) -> Path:
         str(_TARGET_SAMPLE_RATE),
         str(out),
     ]
-    result = subprocess.run(command, capture_output=True)
+    result = subprocess.run(command, capture_output=True, timeout=75)
     if result.returncode != 0:
         stderr = result.stderr.decode("utf-8", errors="replace").strip()
         raise RuntimeError(f"ffmpeg failed to encode {src} (exit {result.returncode}): {stderr}")
@@ -73,12 +74,13 @@ def _verify_ogg(path: Path) -> None:
         str(path),
     ]
     try:
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode == 0:
-            codec = result.stdout.strip().lower()
-            if codec and codec != "vorbis":
-                raise ValueError(f"encoded audio codec is not vorbis: {codec} in {path}")
-            return
+        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            raise RuntimeError(f"ffprobe failed to inspect OGG (exit {result.returncode}): {result.stderr.strip()}")
+        codec = result.stdout.strip().lower()
+        if codec and codec != "vorbis":
+            raise ValueError(f"encoded audio codec is not vorbis: {codec} in {path}")
+        return
     except FileNotFoundError:
         pass
 
@@ -110,7 +112,7 @@ def normalize_cover(src_image_path: Path | str, out_jpg_path: Path | str) -> Pat
         "2",
         str(out),
     ]
-    result = subprocess.run(command, capture_output=True)
+    result = subprocess.run(command, capture_output=True, timeout=75)
     if result.returncode != 0:
         stderr = result.stderr.decode("utf-8", errors="replace").strip()
         raise RuntimeError(f"ffmpeg failed to convert cover {src} (exit {result.returncode}): {stderr}")

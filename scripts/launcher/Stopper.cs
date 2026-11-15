@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Windows.Forms;
 
 namespace DanceCubeArrangerStopper
@@ -8,75 +9,42 @@ namespace DanceCubeArrangerStopper
     static class Program
     {
         [STAThread]
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            bool silent = args != null && Array.Exists(args, delegate(string a) {
-                return a.Equals("/silent", StringComparison.OrdinalIgnoreCase) || a.Equals("/q", StringComparison.OrdinalIgnoreCase);
+            bool quiet = Array.Exists(args, delegate(string arg) {
+                return arg.Equals("/silent", StringComparison.OrdinalIgnoreCase) ||
+                       arg.Equals("/q", StringComparison.OrdinalIgnoreCase);
             });
-
             try
             {
-                string appDir = AppDomain.CurrentDomain.BaseDirectory;
-                string stateDir = Path.Combine(appDir, @"artifacts\arranger");
-                string pidFile = Path.Combine(stateDir, "editor-server.pid");
-                string portFile = Path.Combine(stateDir, "editor-server.port");
-
-                if (!File.Exists(pidFile))
+                string root = AppDomain.CurrentDomain.BaseDirectory;
+                string script = Path.Combine(root, @"scripts\editor_server.ps1");
+                var start = new ProcessStartInfo
                 {
-                    if (!silent) MessageBox.Show("当前没有正在运行的舞立方排键器服务。", "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                int pid = 0;
-                if (!int.TryParse(File.ReadAllText(pidFile).Trim(), out pid))
+                    FileName = Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe"),
+                    Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\" -Mode stop",
+                    WorkingDirectory = root,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
+                };
+                using (Process process = Process.Start(start))
                 {
-                    TryDelete(pidFile);
-                    TryDelete(portFile);
-                    if (!silent) MessageBox.Show("记录的进程 PID 无效，已清理状态文件。", "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                bool killed = false;
-                try
-                {
-                    Process p = Process.GetProcessById(pid);
-                    if (p != null && !p.HasExited)
-                    {
-                        p.Kill();
-                        p.WaitForExit(3000);
-                        killed = true;
-                    }
-                }
-                catch
-                {
-                    // 进程已不在
-                }
-
-                TryDelete(pidFile);
-                TryDelete(portFile);
-
-                if (killed)
-                {
-                    if (!silent) MessageBox.Show(string.Format("舞立方排键器后台服务 (PID {0}) 已安全停止。", pid), "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    if (!silent) MessageBox.Show("排键器服务未在运行，已清理残留状态。", "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var output = process.StandardOutput.ReadToEndAsync();
+                    var error = process.StandardError.ReadToEndAsync();
+                    process.WaitForExit();
+                    if (process.ExitCode == 0) return 0;
+                    throw new InvalidOperationException(error.Result.Trim() + Environment.NewLine + output.Result.Trim());
                 }
             }
-            catch (Exception ex)
+            catch (Exception error)
             {
-                if (!silent) MessageBox.Show("停止服务时出错：\n" + ex.Message, "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (!quiet) MessageBox.Show(error.Message, "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return 1;
             }
-        }
-
-        static void TryDelete(string path)
-        {
-            try
-            {
-                if (File.Exists(path)) File.Delete(path);
-            }
-            catch { }
         }
     }
 }

@@ -61,6 +61,7 @@ Copy-Item -Path (Join-Path $SourceBase "*") -Destination $ServerDir -Recurse -Fo
 # 复制 .next/static 到 server/.next/static
 $StaticSrc = Join-Path $UiDir ".next\static"
 $StaticDest = Join-Path $ServerDir ".next\static"
+if (-not (Test-Path -LiteralPath $StaticSrc -PathType Container)) { throw "[PACK_STATIC_MISSING] 找不到 .next/static。" }
 if (Test-Path -LiteralPath $StaticSrc) {
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $StaticDest) | Out-Null
     Copy-Item -Path $StaticSrc -Destination $StaticDest -Recurse -Force
@@ -89,44 +90,19 @@ New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 
 Write-Host "`n[4.5/5] 装配 100% 零依赖便携环境 (Node.js / ffmpeg / Python)..."
 
-# 1. 复制 Node.js 运行时
-$NodeDest = Join-Path $BinDir "node.exe"
-$NodeCandidate = @(
-    "C:\nvm4w\nodejs\node.exe",
-    (Get-Command "node.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
-) | Where-Object { $_ -and (Test-Path $_ -PathType Leaf) } | Select-Object -First 1
-
-if ($NodeCandidate) {
-    Write-Host "  -> 复制便携 Node.js: $NodeCandidate -> bin\node.exe"
-    Copy-Item -Path $NodeCandidate -Destination $NodeDest -Force
-} else {
-    Write-Warning "未找到本地 node.exe，跳过内置 Node.js 运行时。"
-}
-
-# 2. 复制 ffmpeg 与 ffprobe
-$FfmpegCandidate = @(
-    "C:\Users\kayso\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1-full_build\bin\ffmpeg.exe",
-    "C:\Users\kayso\AppData\Local\Microsoft\WinGet\Links\ffmpeg.exe",
-    (Get-Command "ffmpeg.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
-) | Where-Object { $_ -and (Test-Path $_ -PathType Leaf) } | Select-Object -First 1
-
-$FfprobeCandidate = @(
-    "C:\Users\kayso\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1-full_build\bin\ffprobe.exe",
-    "C:\Users\kayso\AppData\Local\Microsoft\WinGet\Links\ffprobe.exe",
-    (Get-Command "ffprobe.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
-) | Where-Object { $_ -and (Test-Path $_ -PathType Leaf) } | Select-Object -First 1
-
-if ($FfmpegCandidate) {
-    $item = Get-Item -LiteralPath $FfmpegCandidate
-    $resolvedFfmpeg = if ($item.LinkType -and $item.Target) { $item.Target } else { $item.FullName }
-    Write-Host "  -> 复制 ffmpeg: $resolvedFfmpeg -> bin\ffmpeg.exe"
-    Copy-Item -LiteralPath $resolvedFfmpeg -Destination (Join-Path $BinDir "ffmpeg.exe") -Force
-}
-if ($FfprobeCandidate) {
-    $item = Get-Item -LiteralPath $FfprobeCandidate
-    $resolvedFfprobe = if ($item.LinkType -and $item.Target) { $item.Target } else { $item.FullName }
-    Write-Host "  -> 复制 ffprobe: $resolvedFfprobe -> bin\ffprobe.exe"
-    Copy-Item -LiteralPath $resolvedFfprobe -Destination (Join-Path $BinDir "ffprobe.exe") -Force
+foreach ($name in @("node.exe", "ffmpeg.exe", "ffprobe.exe")) {
+    $source = Get-Command $name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $source) { throw "[PACK_RUNTIME_MISSING] PATH 中未找到 $name。" }
+    $item = Get-Item -LiteralPath $source.Source
+    $resolved = if ($item.LinkType -and $item.Target) { $item.Target } else { $item.FullName }
+    $destination = Join-Path $BinDir $name
+    Copy-Item -LiteralPath $resolved -Destination $destination -Force
+    $argument = if ($name -eq "node.exe") { "--version" } else { "-version" }
+    $runtimeVersion = & $destination $argument
+    if ($LASTEXITCODE -ne 0) { throw "[PACK_RUNTIME_INVALID] 随包 $name 自检失败。" }
+    if ($name -eq "node.exe" -and [version]($runtimeVersion.TrimStart("v")) -lt [version]"20.9.0") {
+        throw "[PACK_NODE_VERSION] 随包 Node.js 版本必须为 20.9.0 或更高。"
+    }
 }
 
 # 3. 准备并配置 Windows 官方 Embeddable Python
@@ -139,13 +115,13 @@ $PyZip = Join-Path $CacheDir "python-3.12.8-embed-amd64.zip"
 if (-not (Test-Path $PyZip -PathType Leaf)) {
     Write-Host "  -> 下载官方 Embeddable Python 3.12 (约 11MB)..."
     $pyUrl = "https://www.python.org/ftp/python/3.12.8/python-3.12.8-embed-amd64.zip"
-    & curl.exe -s -L $pyUrl -o $PyZip
+    & curl.exe --fail --silent --show-error --location $pyUrl --output $PyZip
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path $PyZip)) {
         throw "Python 运行时下载失败！"
     }
 }
 Write-Host "  -> 解压 Embeddable Python 到: bin\python"
-Expand-Archive -Path $PyZip -DestinationPath $PyDestDir -Force
+Expand-Archive -LiteralPath $PyZip -DestinationPath $PyDestDir -Force
 
 $PthFile = Join-Path $PyDestDir "python312._pth"
 if (Test-Path $PthFile) {
@@ -187,6 +163,11 @@ if ($LASTEXITCODE -ne 0) {
     throw "启动器编译失败！"
 }
 
+foreach ($required in @("server/server.js", "server/.next/BUILD_ID", "configs/column_geometry.json", "scripts/editor_server.ps1", "scripts/apply_update.ps1")) {
+    if (-not (Test-Path -LiteralPath (Join-Path $PackageDir $required) -PathType Leaf)) {
+        throw "[PACK_FILE_MISSING] 发布包缺少 $required。"
+    }
+}
 # 创建版本标识文件
 $VersionInfo = @"
 舞立方谱面编辑器 (Dance Cube Arranger)

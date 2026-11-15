@@ -143,6 +143,8 @@ export default function StartScreen({ onOpen, resumeIssue }: StartScreenProps) {
         setPathInput(String(data.path));
         await openAbsolutePath(String(data.path));
       }
+    } catch {
+      setError("无法打开 Windows 文件选择器，请重试或输入绝对路径");
     } finally {
       setBusy(false);
     }

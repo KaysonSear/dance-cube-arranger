@@ -1,243 +1,168 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("start", "stop", "status")]
-    [string]$Mode
+    [string]$Mode,
+    [int]$PreferredPort = 0,
+    [switch]$NoBrowser
 )
 
 $ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 . (Join-Path $PSScriptRoot "editor_server_ports.ps1")
 . (Join-Path $PSScriptRoot "editor_server_processes.ps1")
 . (Join-Path $PSScriptRoot "editor_server_state.ps1")
-
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $UiDir = Join-Path $RepoRoot "arranger-ui"
 $ServerJs = Join-Path $RepoRoot "server\server.js"
-$IsStandalone = (Test-Path -LiteralPath $ServerJs -PathType Leaf) -and (-not (Test-Path -LiteralPath $UiDir -PathType Container))
+$Standalone = Test-Path -LiteralPath $ServerJs -PathType Leaf
 $StateDir = Join-Path $RepoRoot "artifacts\arranger"
 $PidFile = Join-Path $StateDir "editor-server.pid"
 $PortFile = Join-Path $StateDir "editor-server.port"
+$StartupLog = Join-Path $StateDir "editor-startup.log"
 $StdoutLog = Join-Path $StateDir "editor-server.stdout.log"
 $StderrLog = Join-Path $StateDir "editor-server.stderr.log"
 
-function Get-ListenerPid(
-    [Parameter(Mandatory = $true)]
-    [ValidateRange(1, 65535)]
-    [int]$Port
-) {
+function Get-EditorHealth([int]$Port) {
     try {
-        $listener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop |
-            Select-Object -First 1
-        if ($null -ne $listener) {
-            return [int]$listener.OwningProcess
-        }
-    } catch {
-        return $null
-    }
-    return $null
-}
-
-function Get-RecordedPid {
-    if (-not (Test-Path -LiteralPath $PidFile -PathType Leaf)) {
-        return $null
-    }
-    $value = 0
-    if ([int]::TryParse((Get-Content -LiteralPath $PidFile -Raw).Trim(), [ref]$value)) {
-        return $value
-    }
-    return $null
-}
-
-function Get-RecordedPort {
-    return Get-RecordedEditorPort -Path $PortFile -DefaultPort 3000
+        $response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$Port/api/health" -TimeoutSec 2
+        return $response.Content | ConvertFrom-Json
+    } catch { return $null }
 }
 
 function Test-EditorProcess([int]$ProcessId) {
     try {
-        $process = Get-CimInstance Win32_Process -Filter "ProcessId=$ProcessId"
-        if ($null -eq $process -or [string]::IsNullOrWhiteSpace($process.CommandLine)) {
-            return $false
-        }
-        if ($IsStandalone) {
-            return $process.CommandLine.ToLowerInvariant().Contains("server.js")
-        }
-        $expected = (Join-Path $UiDir "node_modules\next").ToLowerInvariant()
-        return $process.CommandLine.ToLowerInvariant().Contains($expected)
-    } catch {
-        return $false
+        $info = Get-CimInstance Win32_Process -Filter "ProcessId=$ProcessId"
+        if ($null -eq $info -or $info.Name -ne "node.exe" -or -not $info.CommandLine) { return $false }
+        $expected = if ($Standalone) { $ServerJs } else { Join-Path $UiDir "node_modules\next" }
+        return $info.CommandLine.IndexOf($expected, [StringComparison]::OrdinalIgnoreCase) -ge 0
+    } catch { return $false }
+}
+
+function Open-Editor([int]$Port) {
+    $url = "http://127.0.0.1:$Port/?resume=1"
+    if (-not $NoBrowser) {
+        try { Start-Process $url }
+        catch { Write-Host "[BROWSER_OPEN_FAILED] 请手动打开 $url" }
     }
+    Write-Host "Cube Chart Editor is ready at $url"
 }
 
-function Test-ManagedServer {
-    $recorded = Get-RecordedPid
-    $recordedPort = Get-RecordedPort
-    $listener = Get-ListenerPid $recordedPort
-    return (
-        $null -ne $recorded -and
-        $recorded -eq $listener -and
-        (Test-EditorProcess $recorded)
-    )
-}
-
-if ($Mode -eq "status") {
-    if (Test-ManagedServer) {
-        Write-Output "RUNNING"
-    } else {
-        Write-Output "STOPPED"
+$guard = $null
+try {
+    if ($Mode -eq "start") {
+        try { [void][IO.Directory]::CreateDirectory($StateDir) }
+        catch { throw "[START_DIR_NOT_WRITABLE] 无法写入安装目录。请将编辑器解压到可写的本地文件夹。" }
     }
-    exit 0
-}
-
-if ($Mode -eq "stop") {
-    if (-not (Test-ManagedServer)) {
-        Write-Host "No managed editor server is running."
+    if (-not (Test-Path -LiteralPath $StateDir -PathType Container)) {
+        if ($Mode -eq "status") { Write-Output "STOPPED" }
         exit 0
     }
-    $serverPid = Get-RecordedPid
-    Stop-Process -Id $serverPid -Force
+    if ($Mode -ne "status") {
+        $lockPath = Join-Path $StateDir "editor-server.lock"
+        for ($attempt = 0; $attempt -lt 120 -and -not $guard; $attempt++) {
+            try { $guard = [IO.File]::Open($lockPath, "OpenOrCreate", "ReadWrite", "None") }
+            catch [UnauthorizedAccessException] { throw "[START_DIR_NOT_WRITABLE] 安装目录不可写，请完整解压到可写目录。" }
+            catch [IO.IOException] { Start-Sleep -Seconds 1 }
+        }
+        if (-not $guard) { throw "[START_LOCKED] 另一个启动或停止操作正在进行。" }
+    }
+
+    $recordedId = 0
+    if (Test-Path -LiteralPath $PidFile -PathType Leaf) {
+        [void][int]::TryParse((Get-Content -LiteralPath $PidFile -Raw).Trim(), [ref]$recordedId)
+    }
+    $recordedPort = Get-RecordedEditorPort -Path $PortFile -DefaultPort 3000
+    $existing = $recordedId -gt 0 -and (Test-EditorProcess $recordedId) -and (Get-EditorHealth $recordedPort).pid -eq $recordedId
+    if ($Mode -eq "status") {
+        if ($existing) { Write-Output "RUNNING" } else { Write-Output "STOPPED" }
+        exit 0
+    }
+    if ($Mode -eq "stop") {
+        if ($existing) { Stop-Process -Id $recordedId -Force -ErrorAction Stop }
+        Remove-EditorServerState -PidPath $PidFile -PortPath $PortFile
+        exit 0
+    }
+    if ($existing) { Open-Editor $recordedPort; exit 0 }
+    if ($recordedId) { Add-Content -LiteralPath $StartupLog -Value "[STALE_SERVER_STATE] Ignoring PID $recordedId port $recordedPort." }
     Remove-EditorServerState -PidPath $PidFile -PortPath $PortFile
-    Write-Host "Cube Chart Editor stopped (PID $serverPid)."
-    exit 0
-}
 
-$nodeCmd = $null
-$npm = $null
-
-if (-not $IsStandalone) {
-    if (-not (Test-Path -LiteralPath $UiDir -PathType Container)) {
-        throw "Editor directory not found: $UiDir"
-    }
-    $npm = Get-Command "npm.cmd" -ErrorAction SilentlyContinue
-    if ($null -eq $npm) {
-        throw "npm.cmd was not found. Install Node.js and ensure npm is on PATH."
-    }
-} else {
-    $binNode = Join-Path $RepoRoot "bin\node.exe"
-    if (Test-Path -LiteralPath $binNode -PathType Leaf) {
-        $nodeCmd = $binNode
-    } else {
-        $nodeCmd = (Get-Command "node.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
-    }
-    if ($null -eq $nodeCmd) {
-        throw "node.exe was not found. Please ensure bin\node.exe exists or Node.js is on PATH."
-    }
-}
-
-if (Test-ManagedServer) {
-    $recordedPort = Get-RecordedPort
-    $recordedUrl = "http://localhost:$recordedPort"
-    $recordedLaunchUrl = "$recordedUrl/?resume=1"
-    Start-Process $recordedLaunchUrl
-    Write-Host "Cube Chart Editor is already running at $recordedUrl"
-    exit 0
-}
-
-# First run or missing deps (Dev mode only): auto npm install (matches arranger-ui/start.sh).
-if (-not $IsStandalone) {
-    if (-not (Test-Path -LiteralPath (Join-Path $UiDir "node_modules\next") -PathType Container)) {
-        Write-Host "First run: installing dependencies (this may take a few minutes)..."
-        $install = Start-Process -FilePath $npm.Source `
-            -ArgumentList @("install", "--no-audit", "--no-fund") `
-            -WorkingDirectory $UiDir -Wait -NoNewWindow -PassThru
-        if ($install.ExitCode -ne 0) {
-            throw "npm install failed (exit $($install.ExitCode)). Check your network/Node environment and retry."
-        }
-    }
-}
-
-$portCandidates = Get-EditorPortCandidates
-$Port = Find-AvailableEditorPort -Candidates $portCandidates
-if ($null -eq $Port) {
-    throw (
-        "No usable editor port was found. Tried 3000 and 3210-3299; " +
-        "each port is occupied, reserved, or denied by Windows."
-    )
-}
-$Url = "http://localhost:$Port"
-$LaunchUrl = "$Url/?resume=1"
-
-New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
-
-if ($IsStandalone) {
-    $binDir = Join-Path $RepoRoot "bin"
-    $pyDir = Join-Path $binDir "python"
-    $env:PORT = "$Port"
-    $env:HOSTNAME = "0.0.0.0"
-    $env:NODE_ENV = "production"
-    if (Test-Path (Join-Path $pyDir "python.exe")) {
-        $env:PYTHON_EXECUTABLE = Join-Path $pyDir "python.exe"
-    } elseif (Test-Path (Join-Path $binDir "python.exe")) {
-        $env:PYTHON_EXECUTABLE = Join-Path $binDir "python.exe"
-    }
-    if (Test-Path $binDir) {
-        $env:PATH = "$binDir;$pyDir;" + $env:PATH
-    }
-
-    $launcher = Start-Process `
-        -FilePath $nodeCmd `
-        -ArgumentList @("server.js") `
-        -WorkingDirectory (Join-Path $RepoRoot "server") `
-        -RedirectStandardOutput $StdoutLog `
-        -RedirectStandardError $StderrLog `
-        -WindowStyle Hidden `
-        -PassThru
-} else {
-    $launcher = Start-Process `
-        -FilePath $npm.Source `
-        -ArgumentList @("run", "dev", "--", "--port", "$Port") `
-        -WorkingDirectory $UiDir `
-        -RedirectStandardOutput $StdoutLog `
-        -RedirectStandardError $StderrLog `
-        -WindowStyle Hidden `
-        -PassThru
-}
-
-Write-Host "Starting Cube Chart Editor..."
-for ($attempt = 0; $attempt -lt 120; $attempt++) {
-    if ($launcher.HasExited) {
-        break
-    }
-    $listenerPid = Get-ListenerPid $Port
-    if ($null -ne $listenerPid -and (Test-EditorProcess $listenerPid)) {
+    $bin = Join-Path $RepoRoot "bin"
+    $python = Join-Path $bin "python"
+    $pathNode = (Get-Command "node.exe" -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+    $bundledNode = Join-Path $bin "node.exe"
+    $nodes = if ($Standalone -and $env:ARRANGER_USE_SYSTEM_RUNTIME -ne "1") { @($bundledNode, $pathNode) } else { @($pathNode) }
+    $node = $null
+    foreach ($candidate in $nodes) {
+        if (-not $candidate -or -not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
         try {
-            $null = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5
-            Set-EditorServerState `
-                -PidPath $PidFile `
-                -PortPath $PortFile `
-                -ProcessId $listenerPid `
-                -Port $Port
-            try {
-                Start-Process $LaunchUrl
-            } catch {
-                # Non-interactive or headless environment
+            $output = @(& $candidate --version 2>&1)
+            $exit = $LASTEXITCODE
+            $version = ([string]$output[0]).TrimStart('v')
+            if ($exit -eq 0 -and [version]$version -ge [version]"20.9.0") {
+                $node = $candidate
+                break
             }
-            Write-Host "Cube Chart Editor is ready at $Url"
-            exit 0
-        } catch {
-            # The port is open while Next.js is still compiling; keep polling.
+        } catch { Add-Content -LiteralPath $StartupLog -Value "[NODE_PROBE_FAILED] $($_.Exception.Message)" }
+    }
+    if (-not $node) { throw "[NODE_RUNTIME_UNAVAILABLE] 需要可运行的 Node.js 20.9.0 或更高版本。请完整解压免安装包或检查系统 PATH。" }
+
+    if (-not $Standalone) {
+        if (-not (Test-Path -LiteralPath $UiDir -PathType Container)) {
+            throw "[SERVER_ENTRY_MISSING] 未找到 server/server.js 或 arranger-ui，请完整解压。"
+        }
+        $npm = Get-Command "npm.cmd" -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $npm) { throw "[NPM_UNAVAILABLE] 源码启动需要系统 PATH 中的 npm。" }
+        if (-not (Test-Path -LiteralPath (Join-Path $UiDir "node_modules\next") -PathType Container)) {
+            Push-Location -LiteralPath $UiDir
+            try {
+                & $npm.Source install --no-audit --no-fund *> $StdoutLog
+                if ($LASTEXITCODE -ne 0) { throw "[NPM_INSTALL_FAILED] 依赖安装失败，请查看启动日志。" }
+            } finally { Pop-Location }
         }
     }
-    Start-Sleep -Seconds 1
-}
 
-$exitedEarly = $launcher.HasExited
-$exitCode = $null
-if ($exitedEarly) {
-    $exitCode = $launcher.ExitCode
-} else {
-    $listenerPid = Get-ListenerPid $Port
-    if ($null -eq $listenerPid -or -not (Test-EditorProcess $listenerPid)) {
-        $listenerPid = 0
+    $candidates = Get-EditorPortCandidates
+    if ($PreferredPort -ge 1 -and $PreferredPort -le 65535) {
+        $candidates = @($PreferredPort) + @($candidates | Where-Object { $_ -ne $PreferredPort })
     }
-    Stop-EditorProcessTree -LauncherPid $launcher.Id -ListenerPid $listenerPid
+    $port = Find-AvailableEditorPort -Candidates $candidates
+    if (-not $port) { throw "[START_NO_PORT] 无法使用 3000 或 3210 至 3299 中的端口。" }
+    $env:PORT = "$port"
+    $env:HOSTNAME = "0.0.0.0"
+    if ($Standalone -and $env:ARRANGER_USE_SYSTEM_RUNTIME -ne "1") {
+        $env:PATH = "$bin;$python;$env:PATH"
+    }
+    if ($Standalone) {
+        $env:NODE_ENV = "production"
+        $entry = $ServerJs
+        $working = Split-Path -Parent $ServerJs
+        $arguments = '"' + $entry + '"'
+    } else {
+        $entry = Join-Path $UiDir "node_modules\next\dist\bin\next"
+        $working = $UiDir
+        $arguments = '"' + $entry + '" dev --webpack --port ' + $port
+    }
+    Add-Content -LiteralPath $StartupLog -Value "[STARTING] Port $port; Node $version"
+    $launcher = Start-Process -FilePath $node -ArgumentList $arguments -WorkingDirectory $working -RedirectStandardOutput $StdoutLog -RedirectStandardError $StderrLog -WindowStyle Hidden -PassThru
+    $deadline = [DateTime]::UtcNow.AddSeconds(120)
+    while ([DateTime]::UtcNow -lt $deadline -and -not $launcher.HasExited) {
+        $health = Get-EditorHealth $port
+        if ($health.ok -and ($health.pid -eq $launcher.Id -or (-not $Standalone -and (Test-EditorProcess $health.pid)))) {
+            Set-EditorServerState -PidPath $PidFile -PortPath $PortFile -ProcessId $health.pid -Port $port
+            Add-Content -LiteralPath $StartupLog -Value "[READY] Port $port; PID $($health.pid); Version $($health.version)"
+            Open-Editor $port
+            exit 0
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    if ($launcher.HasExited) { throw "[SERVER_EXITED] 编辑器服务启动失败，退出码 $($launcher.ExitCode)。" }
+    Stop-EditorProcessTree -LauncherPid $launcher.Id
+    throw "[SERVER_START_TIMEOUT] 编辑器服务在 120 秒内未就绪。"
+} catch {
+    $message = $_.Exception.Message
+    try { Add-Content -LiteralPath $StartupLog -Value $message } catch {}
+    [Console]::Error.WriteLine("$message`r`n日志目录：$StateDir")
+    exit 1
+} finally {
+    if ($guard) { $guard.Dispose() }
 }
-Write-Host "Editor startup failed. Recent log output:"
-if (Test-Path -LiteralPath $StdoutLog) {
-    Get-Content -LiteralPath $StdoutLog -Tail 20
-}
-if (Test-Path -LiteralPath $StderrLog) {
-    Get-Content -LiteralPath $StderrLog -Tail 20
-}
-if ($exitedEarly) {
-    throw "Cube Chart Editor exited before becoming ready (exit code $exitCode)."
-}
-throw "Cube Chart Editor did not become ready at $Url within 120 seconds."

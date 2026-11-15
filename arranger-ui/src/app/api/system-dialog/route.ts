@@ -1,16 +1,38 @@
 import { spawn } from "node:child_process";
+import path from "node:path";
 
 import { NextResponse } from "next/server";
 
+import { diagnosticError } from "@/lib/server/diagnostics";
 import { isLocalRequest } from "@/lib/server/local-request";
 import { normalizeAbsolutePath } from "@/lib/server/managed-projects";
 
 export const dynamic = "force-dynamic";
 
-const OPEN_SCRIPT = `
-$ProgressPreference = 'SilentlyContinue';
-Add-Type -AssemblyName System.Windows.Forms;
-[System.Windows.Forms.Application]::EnableVisualStyles();
+const DIALOG_TIMEOUT_MS = 180_000;
+const DIALOG_PREAMBLE = `
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.Application]::EnableVisualStyles()
+if (-not [Environment]::UserInteractive) { exit 41 }
+function Show-EditorFileDialog($Dialog) {
+    $owner = New-Object System.Windows.Forms.Form
+    try {
+        $owner.TopMost = $true
+        $owner.ShowInTaskbar = $false
+        $owner.Opacity = 0
+        $owner.Show()
+        $owner.Activate()
+        $Dialog.ShowDialog($owner)
+    } finally {
+        $owner.Dispose()
+    }
+}
+`;
+
+const OPEN_SCRIPT = DIALOG_PREAMBLE + `
 $d = New-Object System.Windows.Forms.OpenFileDialog;
 $d.AutoUpgradeEnabled = $true;
 $d.Filter = 'Malody charts (*.mc;*.mcz)|*.mc;*.mcz';
@@ -25,16 +47,16 @@ if ($env:ARRANGER_INITIAL_DIR) {
         }
     }
 }
-if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-    [Console]::OutputEncoding = [Text.Encoding]::UTF8;
-    Write-Output $d.FileName;
+$selected = $false
+try {
+    $selected = (Show-EditorFileDialog $d) -eq [System.Windows.Forms.DialogResult]::OK
+    if ($selected) { Write-Output $d.FileName }
+} finally {
+    $d.Dispose()
 }
 `;
 
-const SAVE_MC_SCRIPT = `
-$ProgressPreference = 'SilentlyContinue';
-Add-Type -AssemblyName System.Windows.Forms;
-[System.Windows.Forms.Application]::EnableVisualStyles();
+const SAVE_MC_SCRIPT = DIALOG_PREAMBLE + `
 $d = New-Object System.Windows.Forms.SaveFileDialog;
 $d.AutoUpgradeEnabled = $true;
 $d.Filter = 'Malody chart (*.mc)|*.mc';
@@ -51,17 +73,16 @@ if ($env:ARRANGER_INITIAL_DIR) {
         }
     }
 }
-if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-    [Console]::OutputEncoding = [Text.Encoding]::UTF8;
-    Write-Output $d.FileName;
+$selected = $false
+try {
+    $selected = (Show-EditorFileDialog $d) -eq [System.Windows.Forms.DialogResult]::OK
+    if ($selected) { Write-Output $d.FileName }
+} finally {
+    $d.Dispose()
 }
 `;
 
-const FOLDER_SCRIPT = `
-$ProgressPreference = 'SilentlyContinue';
-[Console]::OutputEncoding = [Text.Encoding]::UTF8;
-Add-Type -AssemblyName System.Windows.Forms;
-[System.Windows.Forms.Application]::EnableVisualStyles();
+const FOLDER_SCRIPT = DIALOG_PREAMBLE + `
 
 try {
     Add-Type -ReferencedAssemblies "System.Windows.Forms", "System.Drawing" -TypeDefinition @'
@@ -207,31 +228,59 @@ namespace ModernFolderPicker {
     if ($folder -and (Test-Path -LiteralPath $folder -PathType Container)) {
         $d.SelectedPath = $folder;
     }
-    if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-        Write-Output $d.SelectedPath;
-    }
+    try {
+        if ((Show-EditorFileDialog $d) -eq [System.Windows.Forms.DialogResult]::OK) {
+            Write-Output $d.SelectedPath
+        }
+    } finally { $d.Dispose() }
 }
 `;
 
-function showDialog(kind: "open" | "folder" | "save-mc", initialDir: string | null): Promise<string> {
+class DialogError extends Error {
+  constructor(readonly code: string, readonly status: number, message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+let dialogPending = false;
+function showDialog(kind: "open" | "folder" | "save-mc", initialDir: string | null, signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
+    signal.throwIfAborted();
+    if (process.platform !== "win32") {
+      reject(new DialogError("DIALOG_UNSUPPORTED", 501, "请在 Windows 桌面打开编辑器，或直接输入本机路径"));
+      return;
+    }
     const script = kind === "open" ? OPEN_SCRIPT : kind === "save-mc" ? SAVE_MC_SCRIPT : FOLDER_SCRIPT;
     const encoded = Buffer.from(script, "utf16le").toString("base64");
-    const child = spawn(
-      "powershell.exe",
-      ["-NoProfile", "-STA", "-NonInteractive", "-EncodedCommand", encoded],
-      {
-        windowsHide: false,
-        env: { ...process.env, ARRANGER_INITIAL_DIR: initialDir ?? "" },
-      },
-    );
+    const powershell = process.env.SystemRoot
+      ? path.join(process.env.SystemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+      : "powershell.exe";
+    const child = spawn(powershell, ["-NoProfile", "-STA", "-NonInteractive", "-EncodedCommand", encoded], {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, ARRANGER_INITIAL_DIR: initialDir ?? "" },
+    });
     let stdout = "";
     let stderr = "";
-    child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
-    child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code !== 0) reject(new Error(stderr.trim() || `选择器退出码 ${code}`));
+    let stopped: DialogError | null = null;
+    function stop(error: DialogError) {
+      stopped ??= error;
+      child.kill();
+    }
+    const cancel = () => stop(new DialogError("DIALOG_CANCELLED", 499, "已取消本次路径选择"));
+    const timer = setTimeout(() => stop(new DialogError("DIALOG_TIMEOUT", 504, "选择窗口等待超时，请重试或手动输入路径")), DIALOG_TIMEOUT_MS);
+    signal.addEventListener("abort", cancel, { once: true });
+    child.stdout.setEncoding("utf8").on("data", (chunk: string) => { stdout += chunk; });
+    child.stderr.setEncoding("utf8").on("data", (chunk: string) => { stderr = (stderr + chunk).slice(-4000); });
+    child.on("error", (cause) => {
+      reject(new DialogError("DIALOG_START_FAILED", 500, "无法启动 Windows 选择窗口，请检查 PowerShell 或手动输入路径", { cause }));
+    });
+    child.once("close", (code) => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", cancel);
+      if (stopped) reject(stopped);
+      else if (code === 41) reject(new DialogError("DIALOG_NO_DESKTOP", 503, "当前没有可交互的 Windows 桌面，请手动输入路径"));
+      else if (code !== 0) reject(new DialogError("DIALOG_FAILED", 500, "Windows 选择窗口出错，请重试或手动输入路径", { cause: stderr }));
       else resolve(stdout.trim());
     });
   });
@@ -250,18 +299,19 @@ export async function POST(req: Request) {
   if (kind !== "open" && kind !== "folder" && kind !== "save-mc") {
     return NextResponse.json({ ok: false, error: "kind 必须是 open/open-file、folder/directory 或 save-mc" }, { status: 400 });
   }
-  let safeInitial: string | null = null;
-  if (typeof initialDir === "string" && initialDir.trim()) {
-    const cleanRaw = initialDir.trim().replace(/\\\\+/g, "\\");
-    const normalized = normalizeAbsolutePath(cleanRaw);
-    if (normalized.ok) {
-      safeInitial = normalized.path;
-    }
-  }
+  const normalized = normalizeAbsolutePath(initialDir);
+  if (dialogPending) return NextResponse.json({
+    ok: false, code: "DIALOG_BUSY", error: "已有 Windows 选择窗口，请先完成或取消",
+  }, { status: 409 });
+  dialogPending = true;
   try {
-    const selected = await showDialog(kind, safeInitial);
+    const selected = await showDialog(kind, normalized.ok ? normalized.path : null, req.signal);
     return NextResponse.json({ ok: true, cancelled: !selected, path: selected || null });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 500 });
+    if (req.signal.aborted) return new Response(null, { status: 499 });
+    if (error instanceof DialogError) return diagnosticError(error.code, error.message, error.status, error.cause);
+    return diagnosticError("DIALOG_FAILED", "Windows 选择窗口出错，请手动输入路径", 500, error);
+  } finally {
+    dialogPending = false;
   }
 }

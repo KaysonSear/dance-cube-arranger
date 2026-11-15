@@ -31,7 +31,7 @@
 ### 📥 下载与安装
 
 - **最新绿色免安装版发布页**：[GitHub Releases](https://github.com/KaysonSear/dance-cube-arranger/releases)
-- **v261115 绿色压缩包直链**：[dance-cube-arranger-261115.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115/dance-cube-arranger-261115.zip)
+- **v261115.1 绿色压缩包直链**：[dance-cube-arranger-261115.1.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115.1/dance-cube-arranger-261115.1.zip)
 - **说明**：免安装版本内置 Node.js、Python 与 ffmpeg 完整独立运行时，纯小白 100% 解压即用，无需配置任何开发环境。
 
 ### 🚀 使用说明
@@ -46,6 +46,10 @@
 4. **工程数据与安全**：
    - 编辑器中所有的工程素材副本、排键进度和历史快照均自动保存在 **`artifacts`** 文件夹中。
    - **请勿随意删除 `artifacts` 文件夹**，建议定期备份该文件夹以防数据丢失。
+
+### 自备运行时
+
+在 Windows 中将 Node.js 20.9.0 或更新版本、Python 及 FFmpeg（含 ffprobe）加入 PATH。设置环境变量 `ARRANGER_USE_SYSTEM_RUNTIME=1` 后重新启动即可使用系统环境。也可通过 `PYTHON_EXECUTABLE` 指定 Python 的完整路径。启动日志位于 `artifacts/arranger`。
 
 ### 🔄 更新方式
 
@@ -95,7 +99,7 @@ A dedicated visual chart creation and arrangement tool designed for **Dance Cube
 ### 📥 Download & Installation
 
 - **Releases Page**: [GitHub Releases](https://github.com/KaysonSear/dance-cube-arranger/releases)
-- **v261115 Portable Package**: [dance-cube-arranger-261115.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115/dance-cube-arranger-261115.zip)
+- **v261115.1 Portable Package**: [dance-cube-arranger-261115.1.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115.1/dance-cube-arranger-261115.1.zip)
 - **Note**: The portable edition bundles Node.js, Python, and ffmpeg. It is 100% plug-and-play with zero external dependencies required.
 
 ### 🚀 Getting Started
@@ -159,7 +163,7 @@ This project is licensed under the **[GNU General Public License v3.0 (GPL-3.0)]
 ### 📥 ダウンロードとインストール
 
 - **最新ポータブル版公開ページ**: [GitHub Releases](https://github.com/KaysonSear/dance-cube-arranger/releases)
-- **v261115 ポータブル版直リンク**: [dance-cube-arranger-261115.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115/dance-cube-arranger-261115.zip)
+- **v261115.1 ポータブル版直リンク**: [dance-cube-arranger-261115.1.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115.1/dance-cube-arranger-261115.1.zip)
 - **特徴**: Node.js、Python、ffmpeg をあらかじめ内包しているため、PC環境の追加設定なしで解凍後すぐに動作します。
 
 ### 🚀 使い方

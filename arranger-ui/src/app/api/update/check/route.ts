@@ -47,7 +47,8 @@ export async function GET(req: Request) {
         Accept: "application/vnd.github.v3+json",
         "User-Agent": "Dance-Cube-Arranger-Client",
       },
-      next: { revalidate: 300 },
+      ...(force ? { cache: "no-store" as const } : { next: { revalidate: 300 } }),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (ghRes.status === 404) {
