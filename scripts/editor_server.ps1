@@ -24,8 +24,16 @@ $StderrLog = Join-Path $StateDir "editor-server.stderr.log"
 
 function Get-EditorHealth([int]$Port) {
     try {
-        $response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$Port/api/health" -TimeoutSec 2
-        return $response.Content | ConvertFrom-Json
+        $request = [Net.HttpWebRequest]::Create("http://127.0.0.1:$Port/api/health")
+        $request.Proxy = $null
+        $request.Timeout = 2000
+        $request.ReadWriteTimeout = 2000
+        $response = $request.GetResponse()
+        try {
+            $reader = [IO.StreamReader]::new($response.GetResponseStream())
+            try { return $reader.ReadToEnd() | ConvertFrom-Json }
+            finally { $reader.Dispose() }
+        } finally { $response.Dispose() }
     } catch { return $null }
 }
 
