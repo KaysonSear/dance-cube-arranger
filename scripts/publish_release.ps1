@@ -1,8 +1,8 @@
 param(
     [string]$Token = $env:GITHUB_TOKEN,
     [string]$Repo = "KaysonSear/dance-cube-arranger",
-    [string]$Tag = "v260915",
-    [string]$ZipPath = "dist/dance-cube-arranger-260915.zip"
+    [string]$Tag,
+    [string]$ZipPath
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +10,17 @@ $ErrorActionPreference = "Stop"
 if ([string]::IsNullOrWhiteSpace($Token)) {
     throw "缺少 GitHub Token，请通过 -Token 传参或设置 GITHUB_TOKEN 环境变量。"
 }
+
+$RepoRoot = Split-Path -Parent $PSScriptRoot
+if (-not $Tag) {
+    $Version = (Get-Content -LiteralPath (Join-Path $RepoRoot "arranger-ui/package.json") -Raw | ConvertFrom-Json).version
+    $Tag = "v$Version"
+}
+if (-not $ZipPath) {
+    $ZipPath = Join-Path $RepoRoot "dist/dance-cube-arranger-$($Tag.TrimStart('v')).zip"
+}
+$assetName = [System.IO.Path]::GetFileName($ZipPath)
+$fullZip = (Resolve-Path -LiteralPath $ZipPath).Path
 
 $headers = @{
     "Authorization" = "Bearer $Token"
@@ -41,7 +52,7 @@ if ($existingRelease) {
 ## 舞立方谱面编辑器 (Dance Cube Arranger) $Tag
 
 ### 📦 资产下载说明
-- **dance-cube-arranger-260915.zip**：免安装独立绿色便携版。
+- **$assetName**：免安装独立绿色便携版。
 - **100% 零依赖开箱即用**：压缩包内已完整内置便携 Node.js 运行时、官方 Embeddable Python 3.12 及静态编译版 ffmpeg/ffprobe 工具，解压后双击 `启动编辑器.exe` 或 `启动编辑器.bat` 即可直接运行，无需预装任何开发环境！
 
 ### ✨ 主要功能
@@ -69,17 +80,19 @@ if ($existingAsset) {
 }
 
 # 3. 上传 zip 文件
-$fullZip = (Resolve-Path $ZipPath).Path
 $zipSize = (Get-Item $fullZip).Length
 Write-Host "开始上传资产: $assetName ($([math]::Round($zipSize / 1MB, 2)) MB)..."
 
 $uploadUri = "https://uploads.github.com/repos/$Repo/releases/$($release.id)/assets?name=$assetName"
-& curl.exe -s -S -X POST `
+& curl.exe --fail -s -S -X POST `
     -H "Authorization: Bearer $Token" `
     -H "Content-Type: application/zip" `
     -H "Accept: application/vnd.github.v3+json" `
     --data-binary "@$fullZip" `
     $uploadUri
+if ($LASTEXITCODE -ne 0) {
+    throw "发布包上传失败 (退出码 $LASTEXITCODE)"
+}
 
 Write-Host "`n[OK] 资产上传完成！"
 Write-Host "Release 地址: $($release.html_url)"

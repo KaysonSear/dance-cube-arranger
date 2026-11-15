@@ -204,12 +204,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mcz", required=True, help=".mcz path")
     parser.add_argument("--out-dir", required=True, help="destination folder")
     args = parser.parse_args(argv)
+    # ASCII escapes keep the JSON bridge independent of the Windows console code page.
     try:
         report = run(mcz_path=args.mcz, out_dir=args.out_dir)
     except Exception as e:  # noqa: BLE001 — 单行 JSON 错误契约给 Node 路由解析
-        print(json.dumps({"ok": False, "error": f"{type(e).__name__}: {e}"}, ensure_ascii=False))
+        print(json.dumps({"ok": False, "error": f"{type(e).__name__}: {e}"}))
         return 1
-    print(json.dumps(report, ensure_ascii=False))
+    print(json.dumps(report))
     return 0
 
 

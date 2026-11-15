@@ -6,12 +6,13 @@ param(
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $UiDir = Join-Path $RepoRoot "arranger-ui"
+$Version = (Get-Content -LiteralPath (Join-Path $UiDir "package.json") -Raw | ConvertFrom-Json).version
 $DistRoot = Join-Path $RepoRoot "dist"
 $PackageDir = Join-Path $DistRoot "dance-cube-arranger"
 
 Write-Host "================================================="
 Write-Host " 舞立方谱面编辑器 (Dance Cube Arranger) 打包工具"
-Write-Host " 版本: 260915 | 方案 A: 绿色解压便携版"
+Write-Host " 版本: $Version | 方案 A: 绿色解压便携版"
 Write-Host "================================================="
 
 # 1. 运行 Next.js 生产环境构建
@@ -154,7 +155,12 @@ if (Test-Path $PthFile) {
     } else {
         $pthContent = $pthContent -replace "#import site", "import site"
     }
-    Set-Content -Path $PthFile -Value $pthContent -Encoding UTF8
+    [IO.File]::WriteAllText($PthFile, $pthContent, [System.Text.UTF8Encoding]::new($false))
+}
+
+& (Join-Path $PyDestDir "python.exe") -B -c "import encodings, zipfile"
+if ($LASTEXITCODE -ne 0) {
+    throw "内置 Python 标准库自检失败 (退出码 $LASTEXITCODE)"
 }
 
 $BinReadme = @"
@@ -184,7 +190,7 @@ if ($LASTEXITCODE -ne 0) {
 # 创建版本标识文件
 $VersionInfo = @"
 舞立方谱面编辑器 (Dance Cube Arranger)
-版本: 260915
+版本: $Version
 打包时间: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 运行模式: Standalone 独立绿色便携版
 "@
@@ -196,7 +202,7 @@ Write-Host " 启动方式: 双击 $PackageDir\启动编辑器.exe 或 启动编�
 Write-Host "================================================="
 
 if ($Zip) {
-    $ZipPath = Join-Path $DistRoot "dance-cube-arranger-260915.zip"
+    $ZipPath = Join-Path $DistRoot "dance-cube-arranger-$Version.zip"
     Write-Host "`n正在创建便携压缩包: $ZipPath ..."
     & (Join-Path $PSScriptRoot "create_portable_zip.ps1") -PackageDir $PackageDir -ZipPath $ZipPath
 }

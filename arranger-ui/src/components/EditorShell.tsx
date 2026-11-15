@@ -5,80 +5,109 @@
  * (工程列表 + 导入)。`key={src}` 重挂载 EditorSession = 工程间状态零残留;F5 保持工程。
  */
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+
+import { loadProjectCatalog, PROJECT_LOAD_TIMEOUT_MS, type ProjectLoadIssue } from "@/lib/project-catalog";
 
 import EditorSession from "./EditorSession";
 import StartScreen from "./StartScreen";
 
+function showProject(src: string | null) {
+  // The page reads the query client-side. A history update needs no RSC navigation.
+  window.history.replaceState(null, "", src ? `/?src=${encodeURIComponent(src)}` : "/");
+}
+
 export default function EditorShell() {
   const params = useSearchParams();
-  const router = useRouter();
   const src = params.get("src");
   const [checkedLegacy, setCheckedLegacy] = useState<string | null>(null);
   const resume = params.get("resume") === "1";
 
+  const resumeRequest = useRef<AbortController | null>(null);
+  const [resumeIssue, setResumeIssue] = useState<ProjectLoadIssue>();
+
   useEffect(() => {
     if (!resume || src) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/projects");
-        const data = (await res.json()) as { lastOpenedSrc?: string | null };
-        if (cancelled) return;
-        if (data.lastOpenedSrc) {
-          router.replace(`/?src=${encodeURIComponent(data.lastOpenedSrc)}`);
-        } else {
-          router.replace("/");
-        }
-      } catch {
-        if (!cancelled) {
-          router.replace("/");
-        }
-      }
-    })();
+    const controller = new AbortController();
+    resumeRequest.current = controller;
+    void loadProjectCatalog("resume", controller.signal).then((result) => {
+      if (controller.signal.aborted || result.status === "cancelled") return;
+      if (result.status === "failed") setResumeIssue(result.issue);
+      const recent = result.status === "loaded" ? result.data.lastOpenedSrc : null;
+      if (result.status === "loaded" && !recent && result.warning) setResumeIssue(result.warning);
+      showProject(recent);
+    });
     return () => {
-      cancelled = true;
+      controller.abort();
+      if (resumeRequest.current === controller) resumeRequest.current = null;
     };
-  }, [resume, router, src]);
+  }, [resume, src]);
+
+  function skipResume() {
+    resumeRequest.current?.abort();
+    showProject(null);
+  }
 
   useEffect(() => {
     if (!src || src.startsWith("managed:")) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PROJECT_LOAD_TIMEOUT_MS);
     let cancelled = false;
     void (async () => {
       try {
         // Finish legacy adoption before chart/state requests start in EditorSession.
-        await fetch("/api/projects");
-        const response = await fetch(`/api/chart?src=${encodeURIComponent(src)}`);
+        await fetch("/api/projects", { signal: controller.signal });
+        const response = await fetch(`/api/chart?src=${encodeURIComponent(src)}`, { signal: controller.signal });
         const chart = await response.json();
         if (cancelled) return;
         if (response.ok && typeof chart.path === "string" && chart.path.startsWith("managed:")) {
-          router.replace(`/?src=${encodeURIComponent(chart.path)}`);
+          showProject(chart.path);
           return;
         }
       } catch { /* The editor reports the concrete loading error. */ }
+      finally { clearTimeout(timeout); }
       if (!cancelled) setCheckedLegacy(src);
     })();
-    return () => { cancelled = true; };
-  }, [src, router]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [src]);
 
   if (src && !src.startsWith("managed:") && checkedLegacy !== src) {
     return <div className="min-h-screen bg-parchment p-8 text-sm text-stone">正在载入工程副本…</div>;
   }
 
   if (resume && !src) {
-    return <div className="min-h-screen bg-parchment p-8 text-sm text-stone">正在恢复上次工程…</div>;
+    return (
+      <div className="min-h-screen bg-parchment p-8 text-sm text-stone">
+        <p role="status">正在恢复上次工程…</p>
+        <button type="button" className="mt-3 rounded-lg bg-sand px-3 py-1.5 text-ink" onClick={skipResume}>
+          进入工程列表
+        </button>
+      </div>
+    );
   }
 
   if (!src) {
-    return <StartScreen onOpen={(s) => router.replace(`/?src=${encodeURIComponent(s)}`)} />;
+    return (
+      <StartScreen
+        resumeIssue={resumeIssue}
+        onOpen={(s) => {
+          setResumeIssue(undefined);
+          showProject(s);
+        }}
+      />
+    );
   }
   return (
     <EditorSession
       key={src}
       src={src}
-      onExit={() => router.replace("/")}
-      onOpenSrc={(s) => router.replace(`/?src=${encodeURIComponent(s)}`)}
+      onExit={() => showProject(null)}
+      onOpenSrc={showProject}
     />
   );
 }

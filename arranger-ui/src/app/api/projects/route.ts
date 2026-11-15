@@ -57,11 +57,15 @@ export async function GET(req: Request) {
       );
     }
   }
+  let startupWarning: "WDA_IMPORT_FAILED" | undefined;
   const wdaDir = path.join(root, "WDA");
   if (fs.existsSync(wdaDir)) {
     for (const name of fs.readdirSync(wdaDir).filter((item) => item.toLowerCase().endsWith(".mcz"))) {
       try { await openManagedPath(path.join(wdaDir, name), { updateLastOpened: false }); }
-      catch { /* invalid historical package stays invisible instead of breaking the start page */ }
+      catch (error) {
+        startupWarning = "WDA_IMPORT_FAILED";
+        console.warn("[projects] WDA_IMPORT_FAILED", error);
+      }
     }
   }
   await adoptLegacyHistory();
@@ -233,6 +237,7 @@ export async function GET(req: Request) {
       hiddenCharts: registry.hiddenCharts,
       hiddenProjects: registry.hiddenProjects,
       lastOpenedSrc,
+      startupWarning,
       writableRoots: ["WDA", "artifacts"],
       defaultSrc,
       writable: Object.fromEntries(importMcs.map((c) => [c.src, parseManagedSrc(c.src) ? true : isWritableRel(c.src)])),

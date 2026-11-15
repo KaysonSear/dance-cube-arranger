@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { APP_VERSION, compareVersions } from "../src/lib/version";
 
 describe("version and update utilities", () => {
-  it("defines APP_VERSION as 260915", () => {
-    expect(APP_VERSION).toBe("260915");
+  it("defines a valid release version", () => {
+    expect(APP_VERSION).toMatch(/^\d{6}$/);
   });
 
   it("correctly compares numeric date-based versions", () => {

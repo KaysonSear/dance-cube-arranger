@@ -8,8 +8,10 @@ import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 
 import BlankChartDialog from "@/components/BlankChartDialog";
 import HelpDialog from "@/components/HelpDialog";
+import ProjectLoadNotice from "@/components/ProjectLoadNotice";
 import UpdateDialog from "@/components/UpdateDialog";
 import { useAppUpdate } from "@/hooks/useAppUpdate";
+import { loadProjectCatalog, type ProjectLoadIssue } from "@/lib/project-catalog";
 import {
   assetDisplayRows,
   type ProjectAsset,
@@ -17,6 +19,7 @@ import {
 } from "@/lib/projects";
 
 export interface StartScreenProps {
+  resumeIssue?: ProjectLoadIssue;
   onOpen(src: string): void;
 }
 
@@ -50,8 +53,11 @@ const MAX = {
   cover: 10 * 1024 * 1024,
 } as const;
 
-export default function StartScreen({ onOpen }: StartScreenProps) {
+export default function StartScreen({ onOpen, resumeIssue }: StartScreenProps) {
   const [projects, setProjects] = useState<ProjectPackage[] | null>(null);
+  const [catalogIssue, setCatalogIssue] = useState<ProjectLoadIssue>();
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const catalogRequest = useRef<AbortController | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
@@ -68,12 +74,19 @@ export default function StartScreen({ onOpen }: StartScreenProps) {
   const coverRef = useRef<HTMLInputElement | null>(null);
 
   const refreshProjects = useCallback(async () => {
-    try {
-      const res = await fetch("/api/projects?includeHidden=1");
-      const data = (await res.json()) as { packages: ProjectPackage[] };
-      setProjects(data.packages ?? []);
-    } catch {
-      setProjects([]);
+    catalogRequest.current?.abort();
+    const controller = new AbortController();
+    catalogRequest.current = controller;
+    setCatalogLoading(true);
+    setCatalogIssue(undefined);
+    const result = await loadProjectCatalog("catalog", controller.signal);
+    if (controller.signal.aborted || result.status === "cancelled") return;
+    setCatalogLoading(false);
+    if (result.status === "loaded") {
+      setProjects(result.data.packages);
+      setCatalogIssue(result.warning);
+    } else {
+      setCatalogIssue(result.issue);
     }
   }, []);
 
@@ -81,6 +94,7 @@ export default function StartScreen({ onOpen }: StartScreenProps) {
     // Fetch completion initializes the external project catalog asynchronously.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshProjects();
+    return () => catalogRequest.current?.abort();
   }, [refreshProjects]);
 
   useEffect(() => {
@@ -365,7 +379,18 @@ export default function StartScreen({ onOpen }: StartScreenProps) {
         <section className="mt-8">
           <h2 className="font-serif text-lg font-medium text-ink">工程</h2>
           <div className="mt-3 space-y-3">
-            {projects === null && <div className="text-xs text-stone">加载工程列表…</div>}
+            {resumeIssue && (
+              <ProjectLoadNotice key={`resume-${resumeIssue.code}`} issue={resumeIssue} />
+            )}
+            {catalogIssue && catalogIssue.code !== resumeIssue?.code && (
+              <ProjectLoadNotice key={`catalog-${catalogIssue.code}`} issue={catalogIssue} />
+            )}
+            {catalogLoading && <div role="status" className="text-xs text-stone">加载工程列表…</div>}
+            {catalogIssue && (
+              <button type="button" className="text-xs text-olive underline" onClick={() => void refreshProjects()}>
+                重试加载
+              </button>
+            )}
             {projects?.filter((project) => !project.hidden && project.charts.some((chart) => !chart.hidden)).map((project) => renderProject(project))}
           </div>
           {projects?.some((project) => project.hidden || project.charts.some((chart) => chart.hidden)) && (
