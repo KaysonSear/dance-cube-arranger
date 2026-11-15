@@ -23,6 +23,7 @@ $StdoutLog = Join-Path $StateDir "editor-server.stdout.log"
 $StderrLog = Join-Path $StateDir "editor-server.stderr.log"
 
 function Get-EditorHealth([int]$Port) {
+    $script:healthStatus = $null
     try {
         $request = [Net.HttpWebRequest]::Create("http://127.0.0.1:$Port/api/health")
         $request.Proxy = $null
@@ -36,6 +37,11 @@ function Get-EditorHealth([int]$Port) {
         } finally { $response.Dispose() }
     } catch {
         $script:healthFailure = $_.Exception.Message
+        $cause = $_.Exception.GetBaseException()
+        if ($cause -is [Net.WebException] -and $cause.Response -is [Net.HttpWebResponse]) {
+            $script:healthStatus = [int]$cause.Response.StatusCode
+            $cause.Response.Dispose()
+        }
         return $null
     }
 }
@@ -132,13 +138,10 @@ try {
         }
     }
 
-    $candidates = Get-EditorPortCandidates
+    $candidates = @(Get-EditorPortCandidates | Where-Object { $_ -ne 3000 }) + @(3000)
     if ($PreferredPort -ge 1 -and $PreferredPort -le 65535) {
         $candidates = @($PreferredPort) + @($candidates | Where-Object { $_ -ne $PreferredPort })
     }
-    $port = Find-AvailableEditorPort -Candidates $candidates
-    if (-not $port) { throw "[START_NO_PORT] 无法使用 3000 或 3210 至 3299 中的端口。" }
-    $env:PORT = "$port"
     $env:HOSTNAME = "0.0.0.0"
     if ($Standalone -and $env:ARRANGER_USE_SYSTEM_RUNTIME -ne "1") {
         $env:PATH = "$bin;$python;$env:PATH"
@@ -147,34 +150,49 @@ try {
         $env:NODE_ENV = "production"
         $entry = $ServerJs
         $working = Split-Path -Parent $ServerJs
-        $arguments = '"' + $entry + '"'
     } else {
         $entry = Join-Path $UiDir "node_modules\next\dist\bin\next"
         $working = $UiDir
-        $arguments = '"' + $entry + '" dev --webpack --port ' + $port
     }
-    Add-Content -LiteralPath $StartupLog -Value "[STARTING] Port $port; Node $version"
-    $launcher = Start-Process -FilePath $node -ArgumentList $arguments -WorkingDirectory $working -RedirectStandardOutput $StdoutLog -RedirectStandardError $StderrLog -WindowStyle Hidden -PassThru
-    $deadline = [DateTime]::UtcNow.AddSeconds(120)
-    $lastHealth = ""
-    while ([DateTime]::UtcNow -lt $deadline -and -not $launcher.HasExited) {
-        $health = Get-EditorHealth $port
-        if ($health.ok -and ($health.pid -eq $launcher.Id -or (-not $Standalone -and (Test-EditorProcess $health.pid)))) {
-            Set-EditorServerState -PidPath $PidFile -PortPath $PortFile -ProcessId $health.pid -Port $port
-            Add-Content -LiteralPath $StartupLog -Value "[READY] Port $port; PID $($health.pid); Version $($health.version)"
-            Open-Editor $port
-            exit 0
+    foreach ($port in $candidates) {
+        if (-not (Test-EditorPortBindable -Port $port)) { continue }
+        $env:PORT = "$port"
+        $arguments = '"' + $entry + '"'
+        if (-not $Standalone) { $arguments += " dev --webpack --port $port" }
+        Add-Content -LiteralPath $StartupLog -Value "[STARTING] Port $port; Node $version"
+        $launcher = Start-Process -FilePath $node -ArgumentList $arguments -WorkingDirectory $working -RedirectStandardOutput $StdoutLog -RedirectStandardError $StderrLog -WindowStyle Hidden -PassThru
+        $deadline = [DateTime]::UtcNow.AddSeconds(120)
+        $lastHealth = ""
+        $otherService = $false
+        while ([DateTime]::UtcNow -lt $deadline -and -not $launcher.HasExited) {
+            $health = Get-EditorHealth $port
+            if ($health.ok -and ($health.pid -eq $launcher.Id -or (-not $Standalone -and (Test-EditorProcess $health.pid)))) {
+                Set-EditorServerState -PidPath $PidFile -PortPath $PortFile -ProcessId $health.pid -Port $port
+                Add-Content -LiteralPath $StartupLog -Value "[READY] Port $port; PID $($health.pid); Version $($health.version)"
+                Open-Editor $port
+                exit 0
+            }
+            $healthDetail = if ($health) { "Expected PID $($launcher.Id); received PID $($health.pid)" } else { $script:healthFailure }
+            if ($healthDetail -and $healthDetail -ne $lastHealth) {
+                Add-Content -LiteralPath $StartupLog -Value "[START_PROBE] $healthDetail"
+                $lastHealth = $healthDetail
+            }
+            if ($Standalone -and ($health -or $script:healthStatus -eq 404)) {
+                $otherService = $true
+                break
+            }
+            Start-Sleep -Milliseconds 500
         }
-        $healthDetail = if ($health) { "Expected PID $($launcher.Id); received PID $($health.pid)" } else { $script:healthFailure }
-        if ($healthDetail -and $healthDetail -ne $lastHealth) {
-            Add-Content -LiteralPath $StartupLog -Value "[START_PROBE] $healthDetail"
-            $lastHealth = $healthDetail
+        if ($otherService) {
+            Stop-EditorProcessTree -LauncherPid $launcher.Id
+            Add-Content -LiteralPath $StartupLog -Value "[START_PORT_WRONG_SERVICE] Skipping port $port."
+            continue
         }
-        Start-Sleep -Milliseconds 500
+        if ($launcher.HasExited) { throw "[SERVER_EXITED] 编辑器服务启动失败，退出码 $($launcher.ExitCode)。" }
+        Stop-EditorProcessTree -LauncherPid $launcher.Id
+        throw "[SERVER_START_TIMEOUT] 编辑器服务在 120 秒内未就绪。"
     }
-    if ($launcher.HasExited) { throw "[SERVER_EXITED] 编辑器服务启动失败，退出码 $($launcher.ExitCode)。" }
-    Stop-EditorProcessTree -LauncherPid $launcher.Id
-    throw "[SERVER_START_TIMEOUT] 编辑器服务在 120 秒内未就绪。"
+    throw "[START_NO_PORT] 无法使用 3210 至 3299 或 3000 端口。"
 } catch {
     $message = $_.Exception.Message
     try { Add-Content -LiteralPath $StartupLog -Value $message } catch {}
