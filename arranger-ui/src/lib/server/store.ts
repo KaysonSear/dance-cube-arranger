@@ -12,11 +12,38 @@ import { ARTIFACTS_REL, findRepoRoot } from "./paths";
 
 export const SNAPSHOT_KEEP = 50;
 
+/** Windows 上目标文件被杀毒/索引/另一请求短暂占用时 rename 会报这些码,稍后重试即可。 */
+const TRANSIENT_RENAME_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
+const RENAME_ATTEMPTS = 5;
+const RENAME_BACKOFF_MS = 50;
+
+function renameWithRetry(from: string, to: string): void {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      fs.renameSync(from, to);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code ?? "";
+      if (attempt >= RENAME_ATTEMPTS || !TRANSIENT_RENAME_CODES.has(code)) throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, RENAME_BACKOFF_MS * attempt);
+    }
+  }
+}
+
 export function writeJsonAtomic(file: string, data: unknown): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
-  fs.renameSync(tmp, file);
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
+    renameWithRetry(tmp, file);
+  } catch (error) {
+    try {
+      fs.rmSync(tmp, { force: true });
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], "写入失败，且无法清理临时文件", { cause: error });
+    }
+    throw error;
+  }
 }
 
 export function readJsonIfExists<T>(file: string): T | null {

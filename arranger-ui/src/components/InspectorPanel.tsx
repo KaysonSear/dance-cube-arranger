@@ -36,6 +36,7 @@ export interface InspectorPanelProps {
   onJumpToHoldOverlap?(): void;
   onJumpToTriple?(): void;
   onDeleteOnset?(): void;
+  onDownloadDiagnostics(): void;
 }
 
 export default function InspectorPanel(props: InspectorPanelProps) {
@@ -119,6 +120,15 @@ export default function InspectorPanel(props: InspectorPanelProps) {
           </div>
         )
       )}
+
+      <button
+        type="button"
+        disabled={warnings.length + (props.tripleWarnings?.length ?? 0) === 0}
+        onClick={props.onDownloadDiagnostics}
+        className="w-full rounded-lg px-2.5 py-2 text-left font-medium text-ink shadow-ring enabled:cursor-pointer enabled:hover:bg-cream disabled:opacity-50"
+      >
+        导出冲突诊断 CSV
+      </button>
 
       <div className="rounded-xl bg-cream p-2.5 shadow-ring">
         <label className="block font-medium text-ink" htmlFor="assign-all-column">

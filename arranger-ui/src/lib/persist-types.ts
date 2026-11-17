@@ -69,7 +69,7 @@ export const PREVIEW_VISUAL_VERSION = 7;
 
 export const DEFAULT_UI: UiPrefs = {
   playheadSec: 0,
-  leadInSec: 0.75,
+  leadInSec: 0.5,
   previewVisualVersion: PREVIEW_VISUAL_VERSION,
   snapDenom: 4,
   nudgeMs: 0,
@@ -77,8 +77,8 @@ export const DEFAULT_UI: UiPrefs = {
   scrollSec: 0,
   selectedOnsetId: null,
   playbackRate: 1,
-  musicVol: 1,
-  kickVol: 0.5,
+  musicVol: 0.5,
+  kickVol: 1,
   kickOffsetMs: 0,
   snapClickEnabled: true,
   kickSound: "kick",
@@ -97,7 +97,7 @@ export function normalizeUiPrefs(saved?: Partial<UiPrefs> | null): UiPrefs {
   return {
     ...DEFAULT_UI,
     ...saved,
-    leadInSec: current && typeof saved?.leadInSec === "number" ? saved.leadInSec : 0.75,
+    leadInSec: current && typeof saved?.leadInSec === "number" ? saved.leadInSec : DEFAULT_UI.leadInSec,
     previewVisualVersion: PREVIEW_VISUAL_VERSION,
   };
 }

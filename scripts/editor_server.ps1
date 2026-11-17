@@ -24,6 +24,7 @@ $StderrLog = Join-Path $StateDir "editor-server.stderr.log"
 
 function Get-EditorHealth([int]$Port) {
     $script:healthStatus = $null
+    $script:healthFailure = $null
     try {
         $request = [Net.HttpWebRequest]::Create("http://127.0.0.1:$Port/api/health")
         $request.Proxy = $null
@@ -31,6 +32,7 @@ function Get-EditorHealth([int]$Port) {
         $request.ReadWriteTimeout = 2000
         $response = $request.GetResponse()
         try {
+            $script:healthStatus = [int]$response.StatusCode
             $reader = [IO.StreamReader]::new($response.GetResponseStream())
             try { return $reader.ReadToEnd() | ConvertFrom-Json }
             finally { $reader.Dispose() }
@@ -53,6 +55,29 @@ function Test-EditorProcess([int]$ProcessId) {
         $expected = if ($Standalone) { $ServerJs } else { Join-Path $UiDir "node_modules\next" }
         return $info.CommandLine.IndexOf($expected, [StringComparison]::OrdinalIgnoreCase) -ge 0
     } catch { return $false }
+}
+
+function Get-NextDevLock {
+    if ($Standalone) { return $null }
+    $path = Join-Path $UiDir ".next\dev\lock"
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
+    try {
+        # Next may keep the lock open with delete sharing.
+        $share = [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete
+        $stream = [IO.File]::Open($path, [IO.FileMode]::Open, [IO.FileAccess]::Read, $share)
+        try {
+            $reader = [IO.StreamReader]::new($stream)
+            return $reader.ReadToEnd() | ConvertFrom-Json
+        } finally { $stream.Dispose() }
+    } catch { return $null }
+}
+
+function Test-EditorInstance([int]$ProcessId, [int]$Port) {
+    if ($ProcessId -le 0 -or $Port -lt 1 -or $Port -gt 65535 -or -not (Test-EditorProcess $ProcessId)) {
+        return $false
+    }
+    $health = Get-EditorHealth $Port
+    return ($health.ok -eq $true -and $health.pid -eq $ProcessId)
 }
 
 function Open-Editor([int]$Port) {
@@ -79,7 +104,15 @@ try {
         for ($attempt = 0; $attempt -lt 120 -and -not $guard; $attempt++) {
             try { $guard = [IO.File]::Open($lockPath, "OpenOrCreate", "ReadWrite", "None") }
             catch [UnauthorizedAccessException] { throw "[START_DIR_NOT_WRITABLE] 安装目录不可写，请完整解压到可写目录。" }
-            catch [IO.IOException] { Start-Sleep -Seconds 1 }
+            catch [IO.IOException] {
+                $errorCode = $_.Exception.HResult -band 0xffff
+                if ($errorCode -ne 32 -and $errorCode -ne 33) { throw }
+                if ($Mode -eq "start" -and -not $NoBrowser) {
+                    Write-Host "Editor startup already in progress."
+                    exit 0
+                }
+                Start-Sleep -Seconds 1
+            }
         }
         if (-not $guard) { throw "[START_LOCKED] 另一个启动或停止操作正在进行。" }
     }
@@ -89,7 +122,19 @@ try {
         [void][int]::TryParse((Get-Content -LiteralPath $PidFile -Raw).Trim(), [ref]$recordedId)
     }
     $recordedPort = Get-RecordedEditorPort -Path $PortFile -DefaultPort 3000
-    $existing = $recordedId -gt 0 -and (Test-EditorProcess $recordedId) -and (Get-EditorHealth $recordedPort).pid -eq $recordedId
+    $existing = Test-EditorInstance -ProcessId $recordedId -Port $recordedPort
+    if (-not $existing) {
+        $devLock = Get-NextDevLock
+        $devPid = 0
+        $devPort = 0
+        if ([int]::TryParse([string]$devLock.pid, [ref]$devPid) -and
+            [int]::TryParse([string]$devLock.port, [ref]$devPort) -and
+            (Test-EditorInstance -ProcessId $devPid -Port $devPort)) {
+            $recordedId = $devPid
+            $recordedPort = $devPort
+            $existing = $true
+        }
+    }
     if ($Mode -eq "status") {
         if ($existing) { Write-Output "RUNNING" } else { Write-Output "STOPPED" }
         exit 0
@@ -99,7 +144,11 @@ try {
         Remove-EditorServerState -PidPath $PidFile -PortPath $PortFile
         exit 0
     }
-    if ($existing) { Open-Editor $recordedPort; exit 0 }
+    if ($existing) {
+        Set-EditorServerState -PidPath $PidFile -PortPath $PortFile -ProcessId $recordedId -Port $recordedPort
+        Open-Editor $recordedPort
+        exit 0
+    }
     if ($recordedId) { Add-Content -LiteralPath $StartupLog -Value "[STALE_SERVER_STATE] Ignoring PID $recordedId port $recordedPort." }
     Remove-EditorServerState -PidPath $PidFile -PortPath $PortFile
 
@@ -154,19 +203,23 @@ try {
         $entry = Join-Path $UiDir "node_modules\next\dist\bin\next"
         $working = $UiDir
     }
+    $listening = Get-EditorListeningPorts
     foreach ($port in $candidates) {
-        if (-not (Test-EditorPortBindable -Port $port)) { continue }
+        if (-not (Test-EditorPortBindable -Port $port -ListeningPorts $listening)) { continue }
         $env:PORT = "$port"
         $arguments = '"' + $entry + '"'
         if (-not $Standalone) { $arguments += " dev --webpack --port $port" }
         Add-Content -LiteralPath $StartupLog -Value "[STARTING] Port $port; Node $version"
         $launcher = Start-Process -FilePath $node -ArgumentList $arguments -WorkingDirectory $working -RedirectStandardOutput $StdoutLog -RedirectStandardError $StderrLog -WindowStyle Hidden -PassThru
+        # Keep an open process handle so ExitCode survives fast exits on Windows PowerShell.
+        $null = $launcher.Handle
         $deadline = [DateTime]::UtcNow.AddSeconds(120)
         $lastHealth = ""
         $otherService = $false
         while ([DateTime]::UtcNow -lt $deadline -and -not $launcher.HasExited) {
             $health = Get-EditorHealth $port
-            if ($health.ok -and ($health.pid -eq $launcher.Id -or (-not $Standalone -and (Test-EditorProcess $health.pid)))) {
+            if ($health.ok -eq $true -and ($health.pid -eq $launcher.Id -or
+                (-not $Standalone -and (Test-EditorProcess $health.pid)))) {
                 Set-EditorServerState -PidPath $PidFile -PortPath $PortFile -ProcessId $health.pid -Port $port
                 Add-Content -LiteralPath $StartupLog -Value "[READY] Port $port; PID $($health.pid); Version $($health.version)"
                 Open-Editor $port
@@ -177,7 +230,7 @@ try {
                 Add-Content -LiteralPath $StartupLog -Value "[START_PROBE] $healthDetail"
                 $lastHealth = $healthDetail
             }
-            if ($Standalone -and ($health -or $script:healthStatus -eq 404)) {
+            if ($Standalone -and $null -ne $script:healthStatus) {
                 $otherService = $true
                 break
             }
@@ -188,7 +241,15 @@ try {
             Add-Content -LiteralPath $StartupLog -Value "[START_PORT_WRONG_SERVICE] Skipping port $port."
             continue
         }
-        if ($launcher.HasExited) { throw "[SERVER_EXITED] 编辑器服务启动失败，退出码 $($launcher.ExitCode)。" }
+        if ($launcher.HasExited) {
+            $stderr = Get-Content -LiteralPath $StderrLog -Tail 20
+            if ($stderr -match '\bEADDRINUSE\b') {
+                Add-Content -LiteralPath $StartupLog -Value "[START_PORT_IN_USE] Skipping port $port."
+                continue
+            }
+            if ($stderr) { Add-Content -LiteralPath $StartupLog -Value $stderr }
+            throw "[SERVER_EXITED] 编辑器服务启动失败，退出码 $($launcher.ExitCode)。"
+        }
         Stop-EditorProcessTree -LauncherPid $launcher.Id
         throw "[SERVER_START_TIMEOUT] 编辑器服务在 120 秒内未就绪。"
     }

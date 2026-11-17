@@ -4,6 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildBlankMc, DEFAULT_CHART_METADATA } from "../src/lib/chart-setup";
+import { parseMc } from "../src/lib/mc";
 
 const repo = path.resolve(__dirname, "../..");
 let root: string;
@@ -151,19 +152,28 @@ describe("projects survive removal of external originals", () => {
 
   it("exports an actual MCZ using only workspace assets, then survives deleting that MCZ", async () => {
     const project = await opened();
+    const positiveOffsetText = buildBlankMc(
+      { ...DEFAULT_CHART_METADATA, bpm: 103, offsetMs: 173 },
+      { audioName: "audio.wav", coverName: "cover.png" },
+    );
+    const { POST: save } = await import("../src/app/api/projects/save/route");
+    expect(await (await save(request(project.src, { mcText: positiveOffsetText }))).json()).toMatchObject({ ok: true });
     fs.cpSync(path.join(repo, "scripts"), path.join(root, "scripts"), { recursive: true });
     const workspace = path.join(root, project.project.workspaceRel);
     execFileSync("ffmpeg", ["-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "0.1", path.join(workspace, "audio.wav")], { windowsHide: true, stdio: "pipe" });
     execFileSync("ffmpeg", ["-y", "-f", "lavfi", "-i", "color=c=red:s=16x16", "-frames:v", "1", path.join(workspace, "cover.png")], { windowsHide: true, stdio: "pipe" });
     fs.rmSync(project.dir, { recursive: true });
     const { POST } = await import("../src/app/api/export/mcz/route");
-    const result = await POST(request(project.src, { mcText: text, outputDir: root, packageName: "export.mcz" }));
+    const result = await POST(request(project.src, { mcText: positiveOffsetText, outputDir: root, packageName: "export.mcz" }));
     expect(await result.json()).toMatchObject({ ok: true });
     const { openManagedPath } = await import("../src/lib/server/managed-projects");
     const imported = await openManagedPath(path.join(root, "export.mcz"));
+    const { GET: chart } = await import("../src/app/api/chart/route");
+    const roundTrip = parseMc((await (await chart(request(imported.src))).json()).text);
+    expect(roundTrip.audioNote.offsetMs).toBe(173);
+    expect(roundTrip.timeMap[0].bpm).toBe(103);
     fs.unlinkSync(path.join(root, "export.mcz"));
-    const { POST: save } = await import("../src/app/api/projects/save/route");
-    expect(await (await save(request(imported.src, { mcText: text }))).json()).toMatchObject({ ok: true, syncSkippedReason: "source_missing" });
+    expect(await (await save(request(imported.src, { mcText: positiveOffsetText }))).json()).toMatchObject({ ok: true, syncSkippedReason: "source_missing" });
   }, 30_000);
 
   it("merges old snapshots without replacing existing managed edits", async () => {

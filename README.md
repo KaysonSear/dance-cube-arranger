@@ -31,7 +31,7 @@
 ### 📥 下载与安装
 
 - **最新绿色免安装版发布页**：[GitHub Releases](https://github.com/KaysonSear/dance-cube-arranger/releases)
-- **v261115.1 绿色压缩包直链**：[dance-cube-arranger-261115.1.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115.1/dance-cube-arranger-261115.1.zip)
+- **v261117 绿色压缩包直链**：[dance-cube-arranger-261117.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261117/dance-cube-arranger-261117.zip)
 - **说明**：免安装版本内置 Node.js、Python 与 ffmpeg 完整独立运行时，纯小白 100% 解压即用，无需配置任何开发环境。
 
 ### 🚀 使用说明
@@ -99,7 +99,7 @@ A dedicated visual chart creation and arrangement tool designed for **Dance Cube
 ### 📥 Download & Installation
 
 - **Releases Page**: [GitHub Releases](https://github.com/KaysonSear/dance-cube-arranger/releases)
-- **v261115.1 Portable Package**: [dance-cube-arranger-261115.1.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115.1/dance-cube-arranger-261115.1.zip)
+- **v261117 Portable Package**: [dance-cube-arranger-261117.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261117/dance-cube-arranger-261117.zip)
 - **Note**: The portable edition bundles Node.js, Python, and ffmpeg. It is 100% plug-and-play with zero external dependencies required.
 
 ### 🚀 Getting Started
@@ -163,7 +163,7 @@ This project is licensed under the **[GNU General Public License v3.0 (GPL-3.0)]
 ### 📥 ダウンロードとインストール
 
 - **最新ポータブル版公開ページ**: [GitHub Releases](https://github.com/KaysonSear/dance-cube-arranger/releases)
-- **v261115.1 ポータブル版直リンク**: [dance-cube-arranger-261115.1.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261115.1/dance-cube-arranger-261115.1.zip)
+- **v261117 ポータブル版直リンク**: [dance-cube-arranger-261117.zip](https://github.com/KaysonSear/dance-cube-arranger/releases/download/v261117/dance-cube-arranger-261117.zip)
 - **特徴**: Node.js、Python、ffmpeg をあらかじめ内包しているため、PC環境の追加設定なしで解凍後すぐに動作します。
 
 ### 🚀 使い方

@@ -23,7 +23,8 @@ const order = new Map([
 
 describe("six-key simulator mapping", () => {
   it("maps BELKZJ to columns 0..5", () => {
-    expect(["KeyB", "KeyE", "KeyL", "KeyK", "KeyZ", "KeyJ"].map(simulatorColumnForCode)).toEqual([
+    // Arrow wrapper: map's index argument must not land in the optional keymap parameter.
+    expect(["KeyB", "KeyE", "KeyL", "KeyK", "KeyZ", "KeyJ"].map((code) => simulatorColumnForCode(code))).toEqual([
       0, 1, 2, 3, 4, 5,
     ]);
     expect(simulatorColumnForCode("KeyQ")).toBeNull();

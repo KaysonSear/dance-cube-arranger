@@ -45,6 +45,7 @@ import {
   type Onset,
   type SourceMode,
 } from "@/lib/arrangement";
+import { buildDiagnosticsCsv, holdOverlapTarget } from "@/lib/diagnostics-csv";
 import { fmtTime } from "@/lib/format";
 import { buildArrangedMc, parseMc, type ParsedChart } from "@/lib/mc";
 import { metadataFromChart, type ChartMetadataInput } from "@/lib/chart-setup";
@@ -1039,8 +1040,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     holdOverlapCursorRef.current = nextIdx;
     const w = warnings[nextIdx];
     const list = onsetsRef.current;
-    const targetOnset =
-      list.find((o) => o.id === w.overlappedOnsetId) ?? list.find((o) => o.id === w.onsetId);
+    const targetOnset = holdOverlapTarget(w, (id) => list.find((onset) => onset.id === id));
     if (!targetOnset) return;
     const sec = beatToAudioSec(targetOnset.beatFloat, t);
     cancelSimulatorGesture();
@@ -1078,6 +1078,20 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       }`,
     );
   }, [cancelSimulatorGesture, clock, toast, tripleWarnings]);
+
+  const downloadDiagnostics = useCallback(() => {
+    if (!timing || warnings.length + tripleWarnings.length === 0) return;
+
+    const csv = buildDiagnosticsCsv(onsets, warnings, tripleWarnings, timing);
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "谱面冲突诊断.csv";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, [onsets, timing, warnings, tripleWarnings]);
 
   /** 右键/框选清空:一次 applyEdit(单个 / 批量)。 */
   const clearOnsetIds = useCallback(
@@ -2619,6 +2633,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
             onOpenSimulatorKeymap={() => setShowKeymapModal(true)}
             onJumpToHoldOverlap={jumpToHoldOverlap}
             onJumpToTriple={jumpToTriple}
+            onDownloadDiagnostics={downloadDiagnostics}
             onDeleteOnset={deleteCurrentOnset}
             onAssignAll={(column) => {
               applyEdit((map) => ({

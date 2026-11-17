@@ -7,8 +7,11 @@ import {
 } from "../src/lib/persist-types";
 
 describe("preview preference migration", () => {
-  it("uses the requested 0.75 second default", () => {
-    expect(DEFAULT_UI.leadInSec).toBe(0.75);
+  it("defaults to a 0.5 second lead-in, 50% music volume, and 100% kick volume", () => {
+    const defaults = { leadInSec: 0.5, musicVol: 0.5, kickVol: 1 };
+    expect(DEFAULT_UI).toMatchObject(defaults);
+    expect(normalizeUiPrefs()).toMatchObject(defaults);
+    expect(normalizeUiPrefs({ previewVisualVersion: PREVIEW_VISUAL_VERSION })).toMatchObject(defaults);
     expect(DEFAULT_UI.previewVisualVersion).toBe(PREVIEW_VISUAL_VERSION);
     expect(DEFAULT_UI.simulatorMode).toBe(false);
   });
@@ -19,16 +22,22 @@ describe("preview preference migration", () => {
   });
 
   it("migrates every legacy preview exactly once", () => {
-    expect(normalizeUiPrefs({ leadInSec: 0.35 }).leadInSec).toBe(0.75);
-    expect(normalizeUiPrefs({ leadInSec: 0.6, previewVisualVersion: 6 }).leadInSec).toBe(0.75);
-  });
-
-  it("preserves a user-adjusted value after the visual migration", () => {
-    const normalized = normalizeUiPrefs({
-      leadInSec: 2.15,
+    expect(normalizeUiPrefs({ leadInSec: 0.35, musicVol: 0, kickVol: 0.2 })).toMatchObject({
+      leadInSec: 0.5,
+      musicVol: 0,
+      kickVol: 0.2,
       previewVisualVersion: PREVIEW_VISUAL_VERSION,
     });
-    expect(normalized.leadInSec).toBe(2.15);
-    expect(normalized.previewVisualVersion).toBe(PREVIEW_VISUAL_VERSION);
+    expect(normalizeUiPrefs({ leadInSec: 0.6, previewVisualVersion: 6 }).leadInSec).toBe(0.5);
+  });
+
+  it("preserves user-adjusted lead-in and volumes after the visual migration", () => {
+    const saved = {
+      leadInSec: 2.15,
+      musicVol: 0.8,
+      kickVol: 0,
+      previewVisualVersion: PREVIEW_VISUAL_VERSION,
+    };
+    expect(normalizeUiPrefs(saved)).toMatchObject(saved);
   });
 });

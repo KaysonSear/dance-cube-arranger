@@ -1,9 +1,58 @@
+function Test-EditorListenerConnection {
+    param($Connection)
+    return (
+        $null -ne $Connection -and
+        $Connection.OwningProcess -gt 0 -and
+        (
+            $Connection.State -eq "Listen" -or
+            ($null -eq $Connection.State -and $Connection.RemotePort -eq 0)
+        )
+    )
+}
+
+function Get-EditorListeningPorts {
+    param([int]$Port = 0)
+
+    # Node 26 listeners are missing from GetActiveTcpListeners() and expose a
+    # null State in Get-NetTCPConnection, so read the TCP table directly.
+    # Each Get-NetTCPConnection call costs about a second, so port scans take
+    # one snapshot instead of querying every candidate.
+    $ports = New-Object 'System.Collections.Generic.HashSet[int]'
+    try {
+        $connections = if ($Port -gt 0) {
+            Get-NetTCPConnection -LocalPort $Port -ErrorAction Stop
+        } else {
+            Get-NetTCPConnection -ErrorAction Stop
+        }
+        foreach ($connection in $connections) {
+            if (Test-EditorListenerConnection $connection) { [void]$ports.Add([int]$connection.LocalPort) }
+        }
+    } catch {
+        # No matching socket; the bindability probe still runs.
+    }
+    try {
+        $properties = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties()
+        foreach ($endpoint in $properties.GetActiveTcpListeners()) {
+            [void]$ports.Add($endpoint.Port)
+        }
+    } catch {
+        # The exclusive bind still checks availability if listener enumeration fails.
+    }
+    return ,$ports
+}
+
 function Test-EditorPortBindable {
     param(
         [Parameter(Mandatory = $true)]
         [ValidateRange(1, 65535)]
-        [int]$Port
+        [int]$Port,
+
+        # Snapshot from Get-EditorListeningPorts; omitted means query this port only.
+        [System.Collections.Generic.HashSet[int]]$ListeningPorts = $null
     )
+
+    if ($null -eq $ListeningPorts) { $ListeningPorts = Get-EditorListeningPorts -Port $Port }
+    if ($ListeningPorts.Contains($Port)) { return $false }
 
     $listener = $null
     try {
@@ -36,8 +85,9 @@ function Find-AvailableEditorPort {
         [int[]]$Candidates
     )
 
+    $listening = Get-EditorListeningPorts
     foreach ($candidate in $Candidates) {
-        if (Test-EditorPortBindable -Port $candidate) {
+        if (Test-EditorPortBindable -Port $candidate -ListeningPorts $listening) {
             return [int]$candidate
         }
     }

@@ -35,6 +35,12 @@ import {
 import { noteColor, NOTE_COLORS } from "../src/lib/colors";
 import type { SourceNote } from "../src/lib/mc";
 
+/** Narrow an edit result to its success branch; a failed edit fails the test with its reason. */
+function ok<R extends { ok: boolean }>(result: R): Extract<R, { ok: true }> {
+  if (!result.ok) throw new Error(`edit failed: ${(result as { error?: string }).error}`);
+  return result as Extract<R, { ok: true }>;
+}
+
 function sn(beat: [number, number, number], column = 5, endbeat: [number, number, number] | null = null): SourceNote {
   const f = beat[0] + beat[1] / beat[2];
   return {
@@ -266,9 +272,9 @@ describe("validateTriples(三押及以上，含长条尾与进行中长条)", ()
   it("does not flag single notes or double taps", () => {
     const onsets = buildOnsets([sn([2, 0, 1], 5), sn([4, 0, 1], 5)]);
     let map: AssignmentsMap = {};
-    const r1 = assign(map, onsets[0], 0);
-    const r2 = assign(r1.map, onsets[0], 1); // double tap
-    const r3 = assign(r2.map, onsets[1], 2); // single tap
+    const r1 = ok(assign(map, onsets[0], 0));
+    const r2 = ok(assign(r1.map, onsets[0], 1)); // double tap
+    const r3 = ok(assign(r2.map, onsets[1], 2)); // single tap
     map = r3.map;
     expect(validateTriples(onsets, map)).toHaveLength(0);
   });
@@ -276,9 +282,9 @@ describe("validateTriples(三押及以上，含长条尾与进行中长条)", ()
   it("flags 3 taps at the same onset", () => {
     const onsets = buildOnsets([sn([2, 0, 1], 5)]);
     let map: AssignmentsMap = {};
-    map = assign(map, onsets[0], 0).map;
-    map = assign(map, onsets[0], 2).map;
-    map = assign(map, onsets[0], 4).map;
+    map = ok(assign(map, onsets[0], 0)).map;
+    map = ok(assign(map, onsets[0], 2)).map;
+    map = ok(assign(map, onsets[0], 4)).map;
     const warnings = validateTriples(onsets, map);
     expect(warnings).toHaveLength(1);
     expect(warnings[0].columns).toEqual([0, 2, 4]);
@@ -290,11 +296,11 @@ describe("validateTriples(三押及以上，含长条尾与进行中长条)", ()
     const onsets = buildOnsets([sn([0, 0, 1], 5), sn([2, 0, 1], 5)]);
     let map: AssignmentsMap = {};
     // Hold on col 4 from beat 0 to beat 2
-    map = assign(map, onsets[0], 4).map;
-    map = setHoldEnd(map, onsets[0], 4, [2, 0, 1]).map;
+    map = ok(assign(map, onsets[0], 4)).map;
+    map = ok(setHoldEnd(map, onsets[0], 4, [2, 0, 1])).map;
     // Double tap on cols 0, 1 at beat 2
-    map = assign(map, onsets[1], 0).map;
-    map = assign(map, onsets[1], 1).map;
+    map = ok(assign(map, onsets[1], 0)).map;
+    map = ok(assign(map, onsets[1], 1)).map;
 
     const warnings = validateTriples(onsets, map);
     expect(warnings).toHaveLength(1);
@@ -308,11 +314,11 @@ describe("validateTriples(三押及以上，含长条尾与进行中长条)", ()
   it("flags 1 tap + 2 hold tails at the same beat", () => {
     const onsets = buildOnsets([sn([0, 0, 1], 5), sn([2, 0, 1], 5)]);
     let map: AssignmentsMap = {};
-    map = assign(map, onsets[0], 3).map;
-    map = setHoldEnd(map, onsets[0], 3, [2, 0, 1]).map;
-    map = assign(map, onsets[0], 5).map;
-    map = setHoldEnd(map, onsets[0], 5, [2, 0, 1]).map;
-    map = assign(map, onsets[1], 0).map;
+    map = ok(assign(map, onsets[0], 3)).map;
+    map = ok(setHoldEnd(map, onsets[0], 3, [2, 0, 1])).map;
+    map = ok(assign(map, onsets[0], 5)).map;
+    map = ok(setHoldEnd(map, onsets[0], 5, [2, 0, 1])).map;
+    map = ok(assign(map, onsets[1], 0)).map;
 
     const warnings = validateTriples(onsets, map);
     expect(warnings).toHaveLength(1);
@@ -325,12 +331,12 @@ describe("validateTriples(三押及以上，含长条尾与进行中长条)", ()
     // 3 holds start at staggered beats (0, 0.5, 1) so no triple at start, but all end at beat 2
     const onsets = buildOnsets([sn([0, 0, 1], 5), sn([1, 1, 2], 5), sn([1, 0, 1], 5), sn([4, 0, 1], 5)]);
     let map: AssignmentsMap = {};
-    map = assign(map, onsets[0], 0).map;
-    map = setHoldEnd(map, onsets[0], 0, [2, 0, 1]).map;
-    map = assign(map, onsets[1], 2).map;
-    map = setHoldEnd(map, onsets[1], 2, [2, 0, 1]).map;
-    map = assign(map, onsets[2], 4).map;
-    map = setHoldEnd(map, onsets[2], 4, [2, 0, 1]).map;
+    map = ok(assign(map, onsets[0], 0)).map;
+    map = ok(setHoldEnd(map, onsets[0], 0, [2, 0, 1])).map;
+    map = ok(assign(map, onsets[1], 2)).map;
+    map = ok(setHoldEnd(map, onsets[1], 2, [2, 0, 1])).map;
+    map = ok(assign(map, onsets[2], 4)).map;
+    map = ok(setHoldEnd(map, onsets[2], 4, [2, 0, 1])).map;
 
     const warnings = validateTriples(onsets, map);
     expect(warnings).toHaveLength(2);
@@ -346,10 +352,10 @@ describe("validateTriples(三押及以上，含长条尾与进行中长条)", ()
   it("flags double tap during an ongoing hold", () => {
     const onsets = buildOnsets([sn([0, 0, 1], 5), sn([2, 0, 1], 5), sn([4, 0, 1], 5)]);
     let map: AssignmentsMap = {};
-    map = assign(map, onsets[0], 0).map;
-    map = setHoldEnd(map, onsets[0], 0, [4, 0, 1]).map;
-    map = assign(map, onsets[1], 3).map;
-    map = assign(map, onsets[1], 4).map;
+    map = ok(assign(map, onsets[0], 0)).map;
+    map = ok(setHoldEnd(map, onsets[0], 0, [4, 0, 1])).map;
+    map = ok(assign(map, onsets[1], 3)).map;
+    map = ok(assign(map, onsets[1], 4)).map;
 
     const warnings = validateTriples(onsets, map);
     expect(warnings).toHaveLength(1);
@@ -362,11 +368,11 @@ describe("validateTriples(三押及以上，含长条尾与进行中长条)", ()
   it("does not flag same-column restrike with 1 other tap (2 keys total)", () => {
     const onsets = buildOnsets([sn([0, 0, 1], 5), sn([2, 0, 1], 5)]);
     let map: AssignmentsMap = {};
-    map = assign(map, onsets[0], 0).map;
-    map = setHoldEnd(map, onsets[0], 0, [2, 0, 1]).map;
+    map = ok(assign(map, onsets[0], 0)).map;
+    map = ok(setHoldEnd(map, onsets[0], 0, [2, 0, 1])).map;
     // At beat 2, col 0 is restruck, plus col 1 tap -> total 2 distinct columns
-    map = assign(map, onsets[1], 0).map;
-    map = assign(map, onsets[1], 1).map;
+    map = ok(assign(map, onsets[1], 0)).map;
+    map = ok(assign(map, onsets[1], 1)).map;
 
     const warnings = validateTriples(onsets, map);
     expect(warnings).toHaveLength(0);
@@ -627,7 +633,7 @@ describe("shiftHoldBeat & swapOnsetAssignments", () => {
       other: [{ column: 5, endbeat: null }],
     };
 
-    const res = swapOnsetAssignments(initialMap, onsetA, onsetB);
+    const res = ok(swapOnsetAssignments(initialMap, onsetA, onsetB));
     expect(res.ok).toBe(true);
     expect(res.changed).toBe(true);
 
@@ -647,7 +653,7 @@ describe("shiftHoldBeat & swapOnsetAssignments", () => {
     expect(res.map.other).toEqual([{ column: 5, endbeat: null }]);
 
     // 双重互换自反恢复初始状态 (可逆性)
-    const doubleRes = swapOnsetAssignments(res.map, onsetA, onsetB);
+    const doubleRes = ok(swapOnsetAssignments(res.map, onsetA, onsetB));
     expect(doubleRes.map.onsetA).toEqual(initialMap.onsetA);
     expect(doubleRes.map.onsetB).toEqual(initialMap.onsetB);
   });
@@ -660,13 +666,13 @@ describe("shiftHoldBeat & swapOnsetAssignments", () => {
       onsetA: [{ column: 1, endbeat: null }],
     };
 
-    const res = swapOnsetAssignments(mapWithOnlyA, onsetA, onsetB);
+    const res = ok(swapOnsetAssignments(mapWithOnlyA, onsetA, onsetB));
     expect(res.changed).toBe(true);
     expect(res.map.onsetA).toBeUndefined();
     expect(res.map.onsetB).toEqual([{ column: 1, endbeat: null }]);
 
     // 反向互换同样恢复
-    const reversed = swapOnsetAssignments(res.map, onsetA, onsetB);
+    const reversed = ok(swapOnsetAssignments(res.map, onsetA, onsetB));
     expect(reversed.map.onsetA).toEqual([{ column: 1, endbeat: null }]);
     expect(reversed.map.onsetB).toBeUndefined();
   });
@@ -676,11 +682,11 @@ describe("shiftHoldBeat & swapOnsetAssignments", () => {
     const onsetB: Onset = { id: "onsetB", beat: [4, 0, 4], beatFloat: 4.0, source: [] };
 
     // 同一采音点
-    const selfRes = swapOnsetAssignments({}, onsetA, onsetA);
+    const selfRes = ok(swapOnsetAssignments({}, onsetA, onsetA));
     expect(selfRes.changed).toBe(false);
 
     // 两点均未排键
-    const emptyRes = swapOnsetAssignments({}, onsetA, onsetB);
+    const emptyRes = ok(swapOnsetAssignments({}, onsetA, onsetB));
     expect(emptyRes.changed).toBe(false);
 
     // 两点排键相同
@@ -688,7 +694,7 @@ describe("shiftHoldBeat & swapOnsetAssignments", () => {
       onsetA: [{ column: 2, endbeat: null }],
       onsetB: [{ column: 2, endbeat: null }],
     };
-    const identicalRes = swapOnsetAssignments(identicalMap, onsetA, onsetB);
+    const identicalRes = ok(swapOnsetAssignments(identicalMap, onsetA, onsetB));
     expect(identicalRes.changed).toBe(false);
   });
 

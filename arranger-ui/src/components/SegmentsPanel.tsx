@@ -6,25 +6,35 @@ import type { AudioClock } from "@/hooks/useAudioClock";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { fmtTime } from "@/lib/format";
 import {
+  canReassignTo,
+  canUpdateRelationKind,
   deriveSegments,
   formatAllClipsRangeText,
   formatAllRelationsText,
   formatClipRangeText,
   formatClipTime,
+  getUpgradeLevel,
   mergeClips,
   moveClipEdge,
   parseAbsoluteTime,
   partitionTimedPoints,
+  reassignRelationGroup,
+  relationBadge,
   relationIndexesForSegment,
   removeRelation,
   renameSegment,
   SEGMENT_RELATION_KINDS,
+  swapUpgradeLevel,
+  unlinkSegmentFromRelation,
   updateRelationKind,
   updateRelationNote,
   type ClipEdge,
+  type SegmentRange,
   type SegmentRelationKind,
+  type SegmentRelationV1,
   type SegmentStructureV3,
   type TimedPoint,
+  type UpgradeLevel,
 } from "@/lib/segments";
 import { relationGroupCardBg, relationGroupColor, THEME } from "@/lib/theme";
 
@@ -413,13 +423,16 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
                     const rel = structure.relations[relIdx];
                     if (!rel) return null;
                     return (
-                      <span
+                      <RelationBadgeDropdown
                         key={rel.id}
-                        className="rounded px-1.5 py-0.5 font-mono text-[10px] font-bold text-white shadow-sm"
-                        style={{ backgroundColor: relationGroupColor(relIdx) }}
-                      >
-                        {relationBadge(rel.kind, relIdx + 1)}
-                      </span>
+                        segment={segment}
+                        relation={rel}
+                        relationIndex={relIdx}
+                        structure={structure}
+                        segmentById={segmentById}
+                        onChange={onChange}
+                        onToast={onToast}
+                      />
                     );
                   })}
                   <input
@@ -491,7 +504,15 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
             <div className="mt-2 space-y-2">
               {structure.relations.map((relation, relationIndex) => {
                 const memberCodes = relation.segmentIds
-                  .map((id) => segmentById.get(id)?.code)
+                  .map((id) => {
+                    const s = segmentById.get(id);
+                    if (!s) return null;
+                    if (relation.kind === "upgrade") {
+                      const lvl = getUpgradeLevel(relation, id, structure.clips);
+                      return `${s.code}(${lvl})`;
+                    }
+                    return s.code;
+                  })
                   .filter(Boolean)
                   .join(" → ");
                 return (
@@ -522,7 +543,7 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
                         className="rounded-lg bg-cream px-2 py-1 text-[11px] text-ink outline-none"
                       >
                         {SEGMENT_RELATION_KINDS.map((kind) => (
-                          <option key={kind} value={kind}>
+                          <option key={kind} value={kind} disabled={!canUpdateRelationKind(relation, kind)}>
                             {relationLabel(kind)}
                           </option>
                         ))}
@@ -557,6 +578,199 @@ export default function SegmentsPanel(props: SegmentsPanelProps) {
   );
 }
 
+function RelationBadgeDropdown({
+  segment,
+  relation,
+  relationIndex,
+  structure,
+  segmentById,
+  onChange,
+  onToast,
+}: {
+  segment: SegmentRange;
+  relation: SegmentRelationV1;
+  relationIndex: number;
+  structure: SegmentStructureV3;
+  segmentById: Map<string, SegmentRange>;
+  onChange(structure: SegmentStructureV3): void;
+  onToast(msg: string): void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  const level =
+    relation.kind === "upgrade"
+      ? getUpgradeLevel(relation, segment.id, structure.clips)
+      : undefined;
+  const badgeText = relationBadge(relation.kind, relationIndex + 1, level);
+  const groupColor = relationGroupColor(relationIndex);
+
+  return (
+    <div ref={containerRef} className="relative inline-block">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
+        className="rounded px-1.5 py-0.5 font-mono text-[10px] font-bold text-white shadow-sm hover:brightness-110 active:scale-95 transition-all flex items-center gap-0.5 cursor-pointer"
+        style={{ backgroundColor: groupColor }}
+        title="点击切换关系或更改角色"
+      >
+        <span>{badgeText}</span>
+        <span className="text-[8px] opacity-80 leading-none">▾</span>
+      </button>
+
+      {open && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute left-0 top-full mt-1 z-50 min-w-[140px] max-w-[200px] rounded-xl border border-hairline bg-ivory p-1 shadow-xl text-left text-xs"
+        >
+          {/* 若为升级关系：角色互换选项 */}
+          {relation.kind === "upgrade" && level && (
+            <div className="mb-0.5">
+              {(() => {
+                const targetLvl: UpgradeLevel = level === "Easy" ? "Hard" : "Easy";
+                const targetBadge = relationBadge("upgrade", relationIndex + 1, targetLvl);
+                return (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const next = swapUpgradeLevel(structure, relation.id, segment.id);
+                      onChange(next);
+                      onToast(`已切换升级角色为 ${targetBadge}（角色已互换）`);
+                      setOpen(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-sand transition-colors flex items-center justify-between font-mono cursor-pointer"
+                  >
+                    <span className="font-bold text-[11px]" style={{ color: groupColor }}>
+                      {targetBadge}
+                    </span>
+                    <span className="text-[10px] text-stone">互换角色</span>
+                  </button>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* 其他已存在的关系组（如 U1-Easy、U1-Hard、R2、R3） */}
+          {structure.relations.some((r) =>
+            canReassignTo(structure, segment.id, relation.id, r.id),
+          ) && (
+            <div className="space-y-0.5">
+              {structure.relations.map((otherRel, otherIdx) => {
+                if (!canReassignTo(structure, segment.id, relation.id, otherRel.id)) return null;
+                const otherColor = relationGroupColor(otherIdx);
+
+                if (otherRel.kind === "upgrade") {
+                  return (["Easy", "Hard"] as const).map((lvl) => {
+                    const otherBadge = relationBadge("upgrade", otherIdx + 1, lvl);
+                    return (
+                      <button
+                        key={`${otherRel.id}-${lvl}`}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const next = reassignRelationGroup(
+                            structure,
+                            segment.id,
+                            relation.id,
+                            otherRel.id,
+                            lvl,
+                          );
+                          onChange(next);
+                          onToast(`已将 ${segment.code} 设为 ${otherBadge}`);
+                          setOpen(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-sand transition-colors flex items-center justify-between font-mono cursor-pointer"
+                      >
+                        <span className="font-bold text-[11px]" style={{ color: otherColor }}>
+                          {otherBadge}
+                        </span>
+                      </button>
+                    );
+                  });
+                }
+
+                const otherBadge = relationBadge(otherRel.kind, otherIdx + 1);
+                return (
+                  <button
+                    key={otherRel.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const next = reassignRelationGroup(
+                        structure,
+                        segment.id,
+                        relation.id,
+                        otherRel.id,
+                      );
+                      onChange(next);
+                      if (relation.kind === "repeat" && otherRel.kind === "repeat") {
+                        const codes = relation.segmentIds
+                          .map((id) => segmentById.get(id)?.code ?? id)
+                          .join("、");
+                        onToast(`已将 ${codes} 同步合并入 ${otherBadge} 组`);
+                      } else {
+                        onToast(`已将 ${segment.code} 移入 ${otherBadge} 组`);
+                      }
+                      setOpen(false);
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-sand transition-colors flex items-center justify-between font-mono cursor-pointer"
+                  >
+                    <span className="font-bold text-[11px]" style={{ color: otherColor }}>
+                      {otherBadge}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 解除关系 */}
+          <div className="border-t border-hairline mt-1 pt-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const next = unlinkSegmentFromRelation(structure, segment.id, relation.id);
+                onChange(next);
+                onToast(`已将 ${segment.code} 从 ${badgeText} 移除`);
+                setOpen(false);
+              }}
+              className="w-full text-left px-2 py-1 rounded-lg text-err hover:bg-err/10 transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
+            >
+              <span>✕</span>
+              <span>解除此关系</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function relationLabel(kind: SegmentRelationKind): string {
   return {
     repeat: "重复",
@@ -567,9 +781,4 @@ export function relationLabel(kind: SegmentRelationKind): string {
   }[kind];
 }
 
-export function relationBadge(kind: SegmentRelationKind, index: number): string {
-  const prefix = { repeat: "R", upgrade: "U", variation: "V", contrast: "C", custom: "X" }[
-    kind
-  ];
-  return `${prefix}${index}`;
-}
+export { relationBadge } from "@/lib/segments";

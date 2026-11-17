@@ -10,6 +10,7 @@
  * 打点采样 `public/punchy-snare.mp3`(均自包含,无 CDN)。
  */
 
+import { DEFAULT_UI } from "./persist-types";
 import { makeShuttle, navigationTime, sampleShuttle, type ShuttlePlan } from "./shuttle";
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,6 +111,11 @@ export class AudioEngine {
   private shifter: Shifter | null = null;
   private musicGain: GainNode | null = null;
   private kickGain: GainNode | null = null;
+  /**
+   * 当前排期代次的 kick 总线(→ kickGain)。已 start(when) 的节点无法撤销,
+   * 因此 seek/变速/暂停时断开整条旧总线,让尚未发声的旧排期静音。
+   */
+  private kickBus: GainNode | null = null;
   private engineConnected = false;
   private workletReady = false;
 
@@ -118,8 +124,8 @@ export class AudioEngine {
   private _playing = false;
   private _ready = false;
   private speed = 1;
-  private musicVol = 1;
-  private kickVol = 0.5;
+  private musicVol = DEFAULT_UI.musicVol;
+  private kickVol = DEFAULT_UI.kickVol;
   private kickEnabled = true;
 
   // 位置时钟锚定在 AudioContext 时钟(可听输出的真实时钟),而非 soundtouch 上报的
@@ -423,7 +429,10 @@ export class AudioEngine {
     const t = clamp(sec, 0, this._duration || 0);
     this._position = t;
     this.applySeek(t);
-    if (this._playing) this.reanchor(); // 播放中跳转 → 从新位置重锚
+    if (this._playing) {
+      this.reanchor(); // 播放中跳转 → 从新位置重锚并重置调度窗口
+      this.startKickScheduler();
+    }
     this.broadcast();
   }
 
@@ -431,6 +440,8 @@ export class AudioEngine {
     if (this._playing) this.reanchor(); // 变速前先落定当前位置,避免回溯改写已播段
     this.speed = clamp(rate, SPEED_MIN, SPEED_MAX);
     this.applySpeed();
+    // 前瞻窗口内已按旧倍率排好的 kick 会错拍:丢弃旧排期,按新倍率重排。
+    if (this._playing) this.startKickScheduler();
   }
 
   setMusicVol(v: number): void {
@@ -601,7 +612,7 @@ export class AudioEngine {
       src.connect(f);
       f.connect(g);
     } else src.connect(g);
-    g.connect(this.kickGain!);
+    g.connect(this.kickOut());
     src.start(t);
     src.stop(t + dur + 0.05);
   }
@@ -617,7 +628,7 @@ export class AudioEngine {
     g.gain.exponentialRampToValueAtTime(peak, t + 0.002);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g);
-    g.connect(this.kickGain!);
+    g.connect(this.kickOut());
     o.start(t);
     o.stop(t + dur + 0.05);
   }
@@ -634,7 +645,7 @@ export class AudioEngine {
   private playSample(when: number): void {
     const src = this.ctx!.createBufferSource();
     src.buffer = this.kickBuffer!;
-    src.connect(this.kickGain!);
+    src.connect(this.kickOut());
     const startAt = when - this.kickSampleOnset;
     if (startAt < this.ctx!.currentTime) this.kickClamped += 1; // 排期不足以容纳前导 → 会迟到
     src.start(Math.max(this.ctx!.currentTime, startAt));
@@ -664,7 +675,7 @@ export class AudioEngine {
         break;
       case "guitar": {
         const dist = this.distortion(12);
-        dist.connect(this.kickGain!);
+        dist.connect(this.kickOut());
         const g = ctx.createGain();
         g.gain.setValueAtTime(0.0001, t);
         g.gain.exponentialRampToValueAtTime(0.8, t + 0.004);
@@ -689,7 +700,7 @@ export class AudioEngine {
         master.gain.setValueAtTime(0.0001, t);
         master.gain.exponentialRampToValueAtTime(0.95, t + 0.005);
         master.gain.exponentialRampToValueAtTime(0.0001, t + 0.75);
-        master.connect(this.kickGain!);
+        master.connect(this.kickOut());
         for (const rr of [1, 1.47, 1.83, 2.4, 2.83, 3.46]) {
           const o = ctx.createOscillator();
           o.type = "square";
@@ -735,7 +746,10 @@ export class AudioEngine {
     if (!this._playing || !this.ctx) return;
     if (this.auditioning && !this.auditionWithKick) return;
     const pos = this._position;
-    if (pos < this.lastSchedPos || pos > this.lastSchedPos + 0.3) this.lastSchedPos = pos;
+    // lastSchedPos 是已排期窗口的末端，正常前瞻时本就领先 pos。
+    // 不可因此回退窗口，否则同一 onset 每 25ms 重排，最终还会被钳成迟到的重复声。
+    // seek/play 显式重置窗口；这里只处理主线程长时间停顿后错过的区间。
+    if (pos > this.lastSchedPos + 0.3) this.lastSchedPos = pos;
     const windowEnd = pos + KICK_LOOKAHEAD;
     if (this.kickEnabled && this.kickVol > 0) {
       for (const ts of this.kickOnsets) {
@@ -751,6 +765,12 @@ export class AudioEngine {
   };
 
   private startKickScheduler(): void {
+    // 新排期代次:旧总线上尚未发声的 kick(旧位置/旧倍率)一并静音。
+    this.dropKickBus();
+    if (this.ctx && this.kickGain) {
+      this.kickBus = this.ctx.createGain();
+      this.kickBus.connect(this.kickGain);
+    }
     // 从 pos + 采样前导 起算:排期不足以容纳前导的 onset 直接**跳过而不迟放**
     // (宁可少响一下,也不给出错误的节奏参照)。消除起播/试听后首拍被钳位迟到。
     this.lastSchedPos = this._position + this.kickSampleOnset;
@@ -761,6 +781,22 @@ export class AudioEngine {
   private stopKickScheduler(): void {
     if (this.kickTimerId) clearInterval(this.kickTimerId);
     this.kickTimerId = null;
+    this.dropKickBus(); // 暂停后不得再响出前瞻窗口里的 kick
+  }
+
+  private dropKickBus(): void {
+    if (!this.kickBus) return;
+    try {
+      this.kickBus.disconnect();
+    } catch {
+      /* already off */
+    }
+    this.kickBus = null;
+  }
+
+  /** kick 声源的输出端:播放中走当代总线,暂停时(试听音色)直连 kickGain。 */
+  private kickOut(): AudioNode {
+    return this.kickBus ?? this.kickGain!;
   }
 
   // ── 帧循环:引擎存活期间持续广播位置(暂停时位置恒定,供画布重绘)──

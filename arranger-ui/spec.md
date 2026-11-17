@@ -150,9 +150,11 @@ DOM token 定义在 `src/app/globals.css` 的 `@theme`;**Canvas 颜色唯一取�
 
 - **beat ↔ 谱面秒**:移植 `src/pipeline/time_map.py` 的分段算法(逐段 60/bpm 积分 +
   `time[0].delay` 前置),支持多 BPM(`timemap.ts`)。
-- **offset 符号统一**(`docs/offset_convention.md`):语料正值(+392 → beat0 在音频
-  0.392s);WDA 存 **−463**(相反符号约定,实测首拍 ≈0.42–0.47s,人耳定案)。两者物理
-  含义一致 → `beat0AudioSec = |offset| / 1000`;缺失 → 0 + 常驻警告。
+- **offset 是 Malody 的有符号平移**:`音频时间 = 谱面时间 − offset/1000`,即
+  `beat0AudioSec = −offset / 1000`,**不可取绝对值**。正 offset 使音符对应的音频时间提前,
+  负 offset 使其推迟:+173 → −0.173s,WDA 的 **−463** → +0.463s(实测首拍 ≈0.42–0.47s)。
+  缺失 → 0 + 常驻警告。Python 侧 `scripts/bridge/mc_writer.py` 使用同一约定。
+  正 offset 可能使 beat 0 附近的音符落到负音频时间;播放/时间轴目前以 0 为下界。
 - `audioSec(beat) = beat0AudioSec + nudge/1000 + beatToChartSec(beat)`。
   **锚点自检**(单测):WDA 首采音点 beat 0.25 → 0.463 + 0.25×60/103 ≈ **0.609s**。
 - **主时钟 = WebAudio + soundtouch 引擎**(`src/lib/audio-engine.ts` `AudioEngine`,由
@@ -409,7 +411,7 @@ Ctrl/Meta/Alt 修饰状态的可编程控制器。模式开启时设备键优先
   撤销栈；结构回退/重做会取消待完成 I。
 - **UiPrefs**(`persist-types.ts`,`{...DEFAULT_UI, ...saved.ui}` 合并兼容旧状态)含:
   playheadSec/leadInSec/snapDenom/nudgeMs/pxPerSec/scrollSec/selectedOnsetId/playbackRate +
-  新增 **musicVol(默认 1)/kickVol(默认 0.5)/kickOffsetMs(默认 0,−200…200)/
+  新增 **musicVol(默认 0.5)/kickVol(默认 1)/kickOffsetMs(默认 0,−200…200)/
   snapClickEnabled(默认 true)/kickSound/bpmOverride/offsetOverride/simulatorMode(默认 false)**。
   模拟器开关随工程工作状态与快照恢复；旧状态缺失该字段时保持关闭。
   `WorkingStateV1.addedOnsets?: Beat[]` 记录**新增采音点**(可选 → 旧状态文件照常加载;

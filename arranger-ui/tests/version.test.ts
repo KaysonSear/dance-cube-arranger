@@ -23,6 +23,7 @@ describe("version and update utilities", () => {
   it("orders a same-day hotfix after the base portable release", () => {
     expect(compareVersions("261115", "v261115.1")).toBeGreaterThan(0);
     expect(compareVersions("261115.1", "v261115")).toBeLessThan(0);
+    expect(compareVersions("261115.1", "v261117")).toBeGreaterThan(0);
   });
 
   it("compares semantic versions if used in future", () => {

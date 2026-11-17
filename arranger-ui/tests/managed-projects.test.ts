@@ -71,7 +71,7 @@ beforeEach(() => {
       child.emit("close", ok ? 0 : 1);
     });
     return child;
-  }) as typeof spawn);
+  }) as unknown as typeof spawn);
 });
 
 afterEach(() => {

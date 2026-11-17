@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { tickId } from "../src/lib/beat";
 import { buildArrangedMc, McParseError, parseMc } from "../src/lib/mc";
+import { beatToAudioSec } from "../src/lib/timemap";
 
 function miniMc(overrides?: { note?: unknown[] }): string {
   return JSON.stringify({
@@ -111,6 +112,25 @@ describe("parseMc", () => {
 });
 
 describe("buildArrangedMc", () => {
+  it("preserves +173ms and its playback mapping after save/export and re-import", () => {
+    const source = JSON.parse(miniMc({ note: [
+      { beat: [17, 0, 4], column: 3 },
+      { beat: [17, 0, 4], column: 0 },
+      { beat: [18, 0, 4], endbeat: [19, 0, 4], column: 4 },
+      { beat: [0, 0, 1], type: 1, sound: "audio.ogg", offset: 173 },
+    ] }));
+    source.time[0].bpm = 103;
+    source.meta.song.bpm = 103;
+    const chart = parseMc(JSON.stringify(source));
+    const restored = parseMc(buildArrangedMc(chart, chart.gameplay));
+    expect(restored.gameplay).toEqual(chart.gameplay);
+    expect(restored.audioNote.raw).toEqual(chart.audioNote.raw);
+    expect(restored.audioNote.offsetMs).toBe(173);
+    expect(beatToAudioSec(restored.gameplay[0].beatFloat, {
+      timeMap: restored.timeMap, offsetMs: restored.audioNote.offsetMs, nudgeMs: 0,
+    })).toBeCloseTo(9.729912621359222, 12);
+  });
+
   it("round-trips identically with the same notes", () => {
     const c = parseMc(miniMc());
     const rebuilt = buildArrangedMc(

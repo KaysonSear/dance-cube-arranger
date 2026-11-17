@@ -15,6 +15,8 @@ function Stop-EditorProcessTree {
     $processIds += $LauncherPid
 
     foreach ($processId in ($processIds | Select-Object -Unique)) {
+        # Clean up Next CLI descendants on failed starts, too.
+        try { & taskkill.exe /PID $processId /T /F 2>$null | Out-Null } catch {}
         Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
     }
 }
