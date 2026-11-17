@@ -197,11 +197,17 @@ async function runRealUpdate(url: string, repo: string, tag: string, name: strin
     });
     child.unref();
     const accepted = path.join(tempDir, "accepted");
-    for (let attempt = 0; attempt < 50 && !fs.existsSync(accepted); attempt++) {
+    // The worker validates each destination before asking the running editor to exit.
+    // On Windows this can take several seconds for a full portable package.
+    const handoffDeadline = Date.now() + 60_000;
+    while (!fs.existsSync(accepted) && Date.now() < handoffDeadline) {
       if (child.exitCode !== null) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    if (!fs.existsSync(accepted)) throw new Error("Update worker did not acknowledge the job");
+    if (!fs.existsSync(accepted)) {
+      child.kill();
+      throw new Error("Update worker did not acknowledge the job");
+    }
     currentTask = { stage: "applying", percent: 100, message: "更新包已验证，正在交接和重启", diagnosticId };
     setTimeout(() => process.exit(0), 1200);
   } catch (cause) {

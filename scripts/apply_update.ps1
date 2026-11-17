@@ -23,19 +23,37 @@ function Set-UpdateError([string]$Code, [string]$Message) {
     [IO.File]::WriteAllText($status, $json, [Text.UTF8Encoding]::new($false))
 }
 
+$checkedPaths = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 function Assert-Regular([string]$Path, [string]$Parent) {
-    for ($cursor = $Path; $cursor -and $cursor -ne $Parent; $cursor = Split-Path -Parent $cursor) {
-        if (Test-Path -LiteralPath $cursor) {
-            $item = Get-Item -LiteralPath $cursor -Force
-            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Reparse point in update path: $cursor" }
-        }
+    for ($cursor = $Path; $cursor -and $cursor -ne $Parent; $cursor = [IO.Path]::GetDirectoryName($cursor)) {
+        if (-not $checkedPaths.Add($cursor)) { break }
+        try { $attributes = [IO.File]::GetAttributes($cursor) }
+        catch [IO.FileNotFoundException] { continue }
+        catch [IO.DirectoryNotFoundException] { continue }
+        if ($attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Reparse point in update path: $cursor" }
     }
 }
 
 function Invoke-Editor([string]$Mode) {
-    & $psExe -NoProfile -ExecutionPolicy Bypass -File $launcher -Mode $Mode -PreferredPort $job.port -NoBrowser 2>&1 |
-        ForEach-Object { Write-UpdateLog "$_" }
-    return $LASTEXITCODE
+    $stdout = Join-Path $tempRoot "launcher-$Mode.stdout"
+    $stderr = Join-Path $tempRoot "launcher-$Mode.stderr"
+    $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $launcher +
+        '" -Mode ' + $Mode + ' -PreferredPort ' + [int]$job.port + ' -NoBrowser'
+    # Redirect to files so the detached server cannot keep the worker's pipeline open.
+    $process = Start-Process -FilePath $psExe -ArgumentList $arguments -PassThru -WindowStyle Hidden `
+        -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    try {
+        $null = $process.Handle
+        if (-not $process.WaitForExit(180000)) {
+            $process.Kill()
+            throw "Editor $Mode did not finish"
+        }
+        $exitCode = $process.ExitCode
+        foreach ($file in @($stdout, $stderr)) {
+            Get-Content -LiteralPath $file -Encoding UTF8 | ForEach-Object { Write-UpdateLog $_ }
+        }
+        return $exitCode
+    } finally { $process.Dispose() }
 }
 
 try {
