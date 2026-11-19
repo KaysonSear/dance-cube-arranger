@@ -2,6 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AudioEngine } from "../src/lib/audio-engine";
 
+/** Every fake kick source, in creation order: when it was started and what it fed into. */
+const kickSources: { startAt: number | null; outputs: { disconnected: boolean }[] }[] = [];
+
+/** load() fires the kick-sample fetch without awaiting it; let that promise chain settle. */
+async function kickSampleLoaded() {
+  for (let i = 0; i < 10; i++) await Promise.resolve();
+}
+
 describe("AudioEngine audition kick suppression", () => {
   let originalWindow: unknown;
   let originalFetch: unknown;
@@ -26,8 +34,14 @@ describe("AudioEngine audition kick suppression", () => {
     }
 
     class FakeAudioNode {
-      connect() {}
-      disconnect() {}
+      outputs: FakeAudioNode[] = [];
+      disconnected = false;
+      connect(target: FakeAudioNode) {
+        this.outputs.push(target);
+      }
+      disconnect() {
+        this.disconnected = true;
+      }
     }
 
     class FakeAudioWorkletNode extends FakeAudioNode {
@@ -47,7 +61,14 @@ describe("AudioEngine audition kick suppression", () => {
 
     class FakeAudioBufferSourceNode extends FakeAudioNode {
       buffer: FakeAudioBuffer | null = null;
-      start() {}
+      record = { startAt: null as number | null, outputs: this.outputs };
+      constructor() {
+        super();
+        kickSources.push(this.record);
+      }
+      start(when: number) {
+        this.record.startAt = when;
+      }
       stop() {}
     }
 
@@ -89,6 +110,7 @@ describe("AudioEngine audition kick suppression", () => {
     };
     (globalThis as unknown as { AudioWorkletNode: unknown }).AudioWorkletNode = FakeAudioWorkletNode;
     globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
       arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024)),
     }) as unknown as typeof fetch;
     globalThis.requestAnimationFrame = vi.fn().mockReturnValue(1);
@@ -101,6 +123,52 @@ describe("AudioEngine audition kick suppression", () => {
     globalThis.requestAnimationFrame = originalRaf as typeof requestAnimationFrame;
     globalThis.cancelAnimationFrame = originalCaf as typeof cancelAnimationFrame;
     delete (globalThis as unknown as { AudioWorkletNode?: unknown }).AudioWorkletNode;
+  });
+
+  it("keeps the paused playhead and canvas updates available without an audio file", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }));
+    const engine = new AudioEngine({ onReady: vi.fn(), onPlayingChange: vi.fn() });
+    const frame = vi.fn();
+    engine.subscribe(frame);
+    try {
+      await expect(engine.load("/missing", "/kick")).rejects.toThrow("404");
+      engine.seek(5);
+      engine.shuttleToAndAudition(7);
+      expect(engine.getNavigationTime()).toBe(7);
+      const draw = vi.mocked(requestAnimationFrame).mock.calls[0][0];
+      draw(0);
+      expect(frame).toHaveBeenLastCalledWith(7);
+      expect(engine.playing).toBe(false);
+    } finally {
+      engine.dispose();
+    }
+  });
+
+  it("does not mark a disposed engine ready when an older audio request completes", async () => {
+    let complete!: (response: Response) => void;
+    const request = new Promise<Response>((resolve) => { complete = resolve; });
+    vi.mocked(fetch).mockReturnValueOnce(request);
+    const onReady = vi.fn();
+    const engine = new AudioEngine({ onReady, onPlayingChange: vi.fn() });
+    const loading = engine.load("/slow", "/kick");
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    engine.dispose();
+    complete(new Response(new ArrayBuffer(1)));
+    await loading;
+    expect(onReady).not.toHaveBeenCalled();
+    expect(engine.ready).toBe(false);
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+  });
+
+  it("limits a restored playhead to the decoded track length", async () => {
+    const engine = new AudioEngine({ onReady: vi.fn(), onPlayingChange: vi.fn() });
+    try {
+      engine.seek(30);
+      await engine.load("/test.mp3", "/kick.mp3");
+      expect(engine.getTime()).toBe(10);
+    } finally {
+      engine.dispose();
+    }
   });
 
   it("suppresses kick drum during audition when withKick=false (e.g. Q/E navigation)", async () => {
@@ -132,7 +200,7 @@ describe("AudioEngine audition kick suppression", () => {
     }
   });
 
-  it("schedules kick drum normally during standard playback", async () => {
+  it.each([0.5, 1, 2])("schedules each kick only once across overlapping windows at %sx", async (speed) => {
     vi.useFakeTimers();
     try {
       const engine = new AudioEngine({
@@ -145,19 +213,91 @@ describe("AudioEngine audition kick suppression", () => {
       engine.setKickOnsets([0.05, 0.5, 1.0]);
       engine.setKickEnabled(true);
       engine.setKickVol(1.0);
+      engine.setRate(speed);
 
       // Standard play()
       engine.play();
 
       // Advance timer for kickScheduler
-      vi.advanceTimersByTime(50);
+      vi.advanceTimersByTime(200);
 
       // In standard playback, kick should be scheduled
       const diag = engine.diagnostics();
-      expect(diag.kickScheduled).toBeGreaterThan(0);
+      expect(diag.kickScheduled).toBe(1);
 
       engine.dispose();
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("resets the scheduling window for forward and backward seeks during playback", async () => {
+    vi.useFakeTimers();
+    const engine = new AudioEngine({ onPlayingChange: () => {}, onReady: () => {} });
+    try {
+      await engine.load("/test.mp3", "/kick.mp3");
+      engine.setKickOnsets([0.1, 0.5]);
+      engine.play();
+      vi.advanceTimersByTime(100);
+      expect(engine.diagnostics().kickScheduled).toBe(1);
+      engine.seek(0.4);
+      vi.advanceTimersByTime(100);
+      expect(engine.diagnostics().kickScheduled).toBe(2);
+      engine.seek(0);
+      vi.advanceTimersByTime(100);
+      expect(engine.diagnostics().kickScheduled).toBe(3);
+      expect(engine.diagnostics().playing).toBe(true);
+    } finally {
+      engine.dispose();
+      vi.useRealTimers();
+    }
+  });
+
+  it("silences kicks scheduled at the old speed and reschedules them after setRate", async () => {
+    vi.useFakeTimers();
+    const engine = new AudioEngine({ onPlayingChange: () => {}, onReady: () => {} });
+    try {
+      await engine.load("/test.mp3", "/kick.mp3");
+      await kickSampleLoaded();
+      engine.setKickOnsets([0.2]);
+      engine.play();
+      kickSources.length = 0;
+      vi.advanceTimersByTime(30);
+      expect(kickSources.map((s) => s.startAt)).toEqual([0.2]);
+
+      engine.setRate(0.5);
+      vi.advanceTimersByTime(30);
+      const [stale, fresh] = kickSources;
+      // ctx.currentTime stays 0 under fake timers, so the onset lands at 0.2 / 0.5.
+      expect(fresh.startAt).toBeCloseTo(0.4);
+      expect(stale.outputs.every((bus) => bus.disconnected)).toBe(true);
+      expect(fresh.outputs.some((bus) => bus.disconnected)).toBe(false);
+
+      engine.pause();
+      expect(fresh.outputs.every((bus) => bus.disconnected)).toBe(true);
+    } finally {
+      engine.dispose();
+      vi.useRealTimers();
+    }
+  });
+
+  it("silences kicks from the previous window when seeking during playback", async () => {
+    vi.useFakeTimers();
+    const engine = new AudioEngine({ onPlayingChange: () => {}, onReady: () => {} });
+    try {
+      await engine.load("/test.mp3", "/kick.mp3");
+      await kickSampleLoaded();
+      engine.setKickOnsets([0.2, 5.1]);
+      engine.play();
+      kickSources.length = 0;
+      vi.advanceTimersByTime(30);
+      engine.seek(5);
+      vi.advanceTimersByTime(30);
+      const [stale, fresh] = kickSources;
+      expect(stale.outputs.every((bus) => bus.disconnected)).toBe(true);
+      expect(fresh.outputs.some((bus) => bus.disconnected)).toBe(false);
+    } finally {
+      engine.dispose();
       vi.useRealTimers();
     }
   });

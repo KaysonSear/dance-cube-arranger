@@ -7,13 +7,69 @@
  * 本模块把这份状态转移收拢成纯函数,让快照天然覆盖两者。
  */
 
-import { clearOnset, type AssignmentsMap, type EditResult } from "./arrangement";
+import {
+  assignmentsFromJson,
+  buildOnsets,
+  clearOnset,
+  mergeOnsets,
+  type AssignmentsMap,
+  type EditResult,
+} from "./arrangement";
 import { tickId, type Beat } from "./beat";
+import type { ParsedChart } from "./mc";
+import { normalizeUiPrefs, type UiPrefs, type WorkingStateV1 } from "./persist-types";
+import { restoreSegmentStructure } from "./segments";
+import { beatToAudioSec, type TimingContext } from "./timemap";
 
 export interface EditorSnapshot {
   assignments: AssignmentsMap;
   addedOnsets: Beat[];
   deletedOnsetIds?: string[];
+}
+
+export function editorTiming(
+  chart: ParsedChart,
+  { bpmOverride, offsetOverride, nudgeMs }: Pick<UiPrefs, "bpmOverride" | "offsetOverride" | "nudgeMs">,
+): TimingContext {
+  const timeMap = chart.timeMap;
+  return {
+    timeMap: bpmOverride != null && timeMap.length > 0
+      ? [{ ...timeMap[0], bpm: bpmOverride }, ...timeMap.slice(1)]
+      : timeMap,
+    offsetMs: offsetOverride ?? chart.audioNote.offsetMs,
+    nudgeMs,
+  };
+}
+
+/** Rebuild clips and assignments against the same restored onset and timing state. */
+export function restoreWorkingState(chart: ParsedChart, state: WorkingStateV1, duration: number) {
+  const ui = normalizeUiPrefs(state.ui);
+  const addedOnsets = state.addedOnsets ?? [];
+  const deletedOnsetIds = state.deletedOnsetIds ?? [];
+  const deleted = new Set(deletedOnsetIds);
+  const onsets = mergeOnsets(buildOnsets(chart.gameplay), addedOnsets)
+    .filter((onset) => !deleted.has(onset.id));
+  const timing = editorTiming(chart, ui);
+  const points = onsets.map((onset) => ({
+    id: onset.id,
+    atSec: beatToAudioSec(onset.beatFloat, timing),
+  }));
+  return {
+    ui,
+    snapshot: { assignments: assignmentsFromJson(state.assignments, onsets), addedOnsets, deletedOnsetIds },
+    structure: restoreSegmentStructure(state.structure, duration, points),
+  };
+}
+
+export function deleteShortcut(
+  event: Pick<KeyboardEvent, "key" | "code" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey">,
+  hasSelectedClips: boolean,
+): "delete-onset" | "clear-clip-semantics" | null {
+  if (event.ctrlKey || event.metaKey || event.altKey) return null;
+  const del = event.key === "Delete" || event.code === "Delete";
+  if (!event.shiftKey) return del ? "delete-onset" : null;
+  const backspace = event.key === "Backspace" || event.code === "Backspace";
+  return hasSelectedClips && (del || backspace) ? "clear-clip-semantics" : null;
 }
 
 /** 两个 beat 列表是否等价(引用相同走快路径)。 */

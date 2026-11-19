@@ -55,14 +55,14 @@ def _sanitize(name: str) -> str:
 
 def _unique(name: str, used: set[str]) -> str:
     """Flattening can collide (`a/x.mc` + `b/x.mc`) — suffix the later ones."""
-    if name not in used:
-        used.add(name)
+    if name.casefold() not in used:
+        used.add(name.casefold())
         return name
     stem, ext = Path(name).stem, Path(name).suffix
     for i in range(2, 100):
         cand = f"{stem}_{i}{ext}"
-        if cand not in used:
-            used.add(cand)
+        if cand.casefold() not in used:
+            used.add(cand.casefold())
             return cand
     raise ValueError(f"文件名冲突过多: {name}")
 

@@ -68,7 +68,7 @@ export default function TimingBar({
 
       <label
         className="flex items-center gap-1.5"
-        title={`谱面 offset:beat 0 在音频中的毫秒位置(会写入保存/导出包内谱面)。源值 ${sourceOffsetMs ?? "缺失"}`}
+        title={`谱面 offset:正值使音符对应的音频时间提前，负值使其推迟(会写入保存/导出包内谱面)。源值 ${sourceOffsetMs ?? "缺失"}`}
       >
         offset
         <input

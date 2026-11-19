@@ -2,8 +2,10 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -14,12 +16,33 @@ namespace DanceCubeArrangerLauncher
         [STAThread]
         static void Main(string[] args)
         {
+            Mutex startupMutex = null;
+            bool ownsStartupMutex = false;
+            string startupLog = null;
             try
             {
                 string appDir = AppDomain.CurrentDomain.BaseDirectory;
                 string stateDir = Path.Combine(appDir, @"artifacts\arranger");
                 string pidFile = Path.Combine(stateDir, "editor-server.pid");
                 string portFile = Path.Combine(stateDir, "editor-server.port");
+
+                string uiDir = Path.Combine(appDir, "arranger-ui");
+                string editorServerScript = Path.Combine(appDir, @"scripts\editor_server.ps1");
+                // Source mode always delegates ownership and readiness checks to PowerShell.
+                // Do not hold the native mutex while waiting for that child process.
+                if (Directory.Exists(uiDir) && File.Exists(editorServerScript))
+                {
+                    LaunchSourceMode(appDir, stateDir, editorServerScript);
+                    return;
+                }
+
+                startupMutex = new Mutex(false, GetStartupMutexName(appDir));
+                try { ownsStartupMutex = startupMutex.WaitOne(0); }
+                catch (AbandonedMutexException) { ownsStartupMutex = true; }
+                if (!ownsStartupMutex) return;
+                Directory.CreateDirectory(stateDir);
+                startupLog = Path.Combine(stateDir, "editor-startup.log");
+                File.WriteAllText(startupLog, "Starting portable editor at " + DateTime.Now.ToString("O") + Environment.NewLine, Encoding.UTF8);
 
                 // 1. 检查是否已有运行中的实例
                 if (File.Exists(pidFile) && File.Exists(portFile))
@@ -32,7 +55,8 @@ namespace DanceCubeArrangerLauncher
                         if (IsProcessRunning(runningPid) && IsPortListening(runningPort))
                         {
                             // 已经运行，直接在默认浏览器中激活
-                            Process.Start(string.Format("http://localhost:{0}/?resume=1", runningPort));
+                            OpenBrowser(string.Format("http://localhost:{0}/?resume=1", runningPort), startupLog);
+                            File.AppendAllText(startupLog, "Reused existing service. Exit code: 0" + Environment.NewLine);
                             return;
                         }
                     }
@@ -42,73 +66,19 @@ namespace DanceCubeArrangerLauncher
                 int selectedPort = FindAvailablePort();
                 if (selectedPort == 0)
                 {
-                    MessageBox.Show(
-                        "无法找到可用的排键器端口（已探测 3000 及 3210-3299）。\n请检查是否有其它程序占用了端口。",
-                        "舞立方谱面编辑器 - 端口冲突",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
+                    throw new InvalidOperationException("无法找到可用端口（3000 及 3210-3299）。");
                 }
 
                 // 3. 寻找服务端入口 server.js 或源码工程目录
                 string serverJs = FindServerJs(appDir);
-                string uiDir = Path.Combine(appDir, "arranger-ui");
-                string editorServerScript = Path.Combine(appDir, @"scripts\editor_server.ps1");
-
-                // 如果未找到编译后的 server.js，检查是否在源码工程目录下
                 if (string.IsNullOrEmpty(serverJs))
-                {
-                    if (Directory.Exists(uiDir) && File.Exists(editorServerScript))
-                    {
-                        // 源码工程模式：委托 scripts\editor_server.ps1 启动开发服务
-                        ProcessStartInfo psiDev = new ProcessStartInfo();
-                        psiDev.FileName = "powershell.exe";
-                        psiDev.Arguments = string.Format("-NoProfile -ExecutionPolicy Bypass -File \"{0}\" -Mode start", editorServerScript);
-                        psiDev.WorkingDirectory = appDir;
-                        psiDev.UseShellExecute = false;
-                        psiDev.CreateNoWindow = true;
-                        psiDev.WindowStyle = ProcessWindowStyle.Hidden;
-
-                        Process devProc = Process.Start(psiDev);
-                        if (devProc != null)
-                        {
-                            devProc.WaitForExit();
-                            if (devProc.ExitCode == 0)
-                            {
-                                return;
-                            }
-                        }
-
-                        MessageBox.Show(
-                            "开发服务启动失败，请在终端执行下列命令查看输出：\n\npowershell -File scripts\\editor_server.ps1 -Mode start",
-                            "舞立方谱面编辑器 - 源码模式启动失败",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error
-                        );
-                        return;
-                    }
-
-                    MessageBox.Show(
-                        "未找到服务端入口 server.js 或源码工程目录 arranger-ui。\n\n请检查：\n1. 如果是绿色便携版，请完整解压压缩包，确保 server 文件夹与本程序在同级目录；\n2. 如果是快捷方式，请检查快捷方式的【起始位置】是否设置为安装目录。\n\n当前目录：\n" + appDir,
-                        "舞立方谱面编辑器 - 启动失败",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
-                }
+                    throw new FileNotFoundException("未找到服务端入口 server.js，请完整解压便携版。", appDir);
 
                 // 4. Standalone 模式：寻找 Node.js 运行时
                 string nodeExe = FindNodeExecutable(appDir);
                 if (string.IsNullOrEmpty(nodeExe))
                 {
-                    MessageBox.Show(
-                        "未找到 Node.js 运行环境。\n\n请确保：\n1. 系统中已安装 Node.js (v18.18+) 并加入 PATH；\n2. 或在发布包 bin 目录下放置 node.exe 便携版。",
-                        "舞立方谱面编辑器 - 缺少 Node 运行时",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
+                    throw new FileNotFoundException("未找到 Node.js，请安装并加入 PATH，或在便携版 bin 目录中提供 node.exe。");
                 }
 
                 if (!Directory.Exists(stateDir))
@@ -127,7 +97,7 @@ namespace DanceCubeArrangerLauncher
 
                 // 设置环境变量
                 psi.EnvironmentVariables["PORT"] = selectedPort.ToString();
-                psi.EnvironmentVariables["HOSTNAME"] = "0.0.0.0";
+                psi.EnvironmentVariables["HOSTNAME"] = "127.0.0.1";
                 psi.EnvironmentVariables["NODE_ENV"] = "production";
 
                 // 注入便携运行环境 PATH 与 PYTHON_EXECUTABLE (支持 100% 零依赖开箱即用)
@@ -152,15 +122,12 @@ namespace DanceCubeArrangerLauncher
                     psi.EnvironmentVariables["PATH"] = extraPaths + currentPath;
                 }
 
-                // 重定向日志到 artifacts\arranger
-                string stdoutLog = Path.Combine(stateDir, "editor-server.stdout.log");
-                string stderrLog = Path.Combine(stateDir, "editor-server.stderr.log");
+                File.AppendAllText(startupLog, "Server: " + serverJs + "; port: " + selectedPort + Environment.NewLine);
 
                 Process proc = Process.Start(psi);
                 if (proc == null || proc.HasExited)
                 {
-                    MessageBox.Show("Node.js 服务启动失败，请检查运行日志。", "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    throw new InvalidOperationException("Node.js 服务启动失败。" + (proc == null ? "" : " 退出码: " + proc.ExitCode));
                 }
 
                 // 写入 PID 和端口
@@ -174,8 +141,7 @@ namespace DanceCubeArrangerLauncher
                 {
                     if (proc.HasExited)
                     {
-                        MessageBox.Show("Node.js 服务异常退出，请查看日志文件。", "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
+                        throw new InvalidOperationException("Node.js 服务异常退出，退出码: " + proc.ExitCode);
                     }
 
                     if (ProbeHttp(selectedPort))
@@ -188,18 +154,121 @@ namespace DanceCubeArrangerLauncher
 
                 if (ready)
                 {
-                    Process.Start(targetUrl);
+                    OpenBrowser(targetUrl, startupLog);
                 }
                 else
                 {
                     // 即使未完全探活，也尝试打开浏览器
-                    Process.Start(targetUrl);
+                    OpenBrowser(targetUrl, startupLog);
                 }
+                File.AppendAllText(startupLog, "Editor startup exit code: 0" + Environment.NewLine);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("启动时发生未知错误：\n" + ex.Message, "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.ExitCode = 1;
+                if (startupLog != null)
+                {
+                    try { File.AppendAllText(startupLog, ex.ToString() + Environment.NewLine + "Editor startup exit code: 1" + Environment.NewLine); }
+                    catch { }
+                }
+                MessageBox.Show("启动失败：\n" + ex.Message + (startupLog == null ? "" : "\n\n启动日志：\n" + startupLog), "舞立方谱面编辑器", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                if (ownsStartupMutex) startupMutex.ReleaseMutex();
+                if (startupMutex != null) startupMutex.Dispose();
+            }
+        }
+
+        static string GetStartupMutexName(string appDir)
+        {
+            string canonical = Path.GetFullPath(appDir).TrimEnd('\\', '/').ToLowerInvariant();
+            using (SHA256 sha = SHA256.Create())
+            {
+                return @"Local\DanceCubeArranger.Start." + BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(canonical))).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
+        static void OpenBrowser(string url, string logPath)
+        {
+            try { Process.Start(url); }
+            catch (Exception ex)
+            {
+                // The server is healthy even when the default browser cannot be opened.
+                File.AppendAllText(logPath, "Open the editor manually: " + url + Environment.NewLine + ex.Message + Environment.NewLine);
+            }
+        }
+
+        static void LaunchSourceMode(string appDir, string stateDir, string script)
+        {
+            Directory.CreateDirectory(stateDir);
+            PruneLaunchLogs(stateDir, KeptLaunchLogs - 1);
+            string logPath = Path.Combine(stateDir, "editor-launch-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff") + "-" + Process.GetCurrentProcess().Id + ".log");
+            StringBuilder output = new StringBuilder();
+            ProcessStartInfo info = new ProcessStartInfo("powershell.exe");
+            info.Arguments = string.Format("-NoProfile -ExecutionPolicy Bypass -File \"{0}\" -Mode start", script);
+            info.WorkingDirectory = appDir;
+            info.UseShellExecute = false;
+            info.CreateNoWindow = true;
+            info.WindowStyle = ProcessWindowStyle.Hidden;
+            info.RedirectStandardOutput = true;
+            info.RedirectStandardError = true;
+            info.StandardOutputEncoding = Encoding.UTF8;
+            info.StandardErrorEncoding = Encoding.UTF8;
+            int exitCode = 1;
+            try
+            {
+                using (Process process = new Process())
+                {
+                    process.StartInfo = info;
+                    process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e) { if (e.Data != null) lock (output) { output.AppendLine(e.Data); } };
+                    process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e) { if (e.Data != null) lock (output) { output.AppendLine(e.Data); } };
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    // WaitForExit() without a timeout also waits for the redirected
+                    // pipe to close; the detached dev server inherits that pipe, so
+                    // poll the process handle instead.
+                    Stopwatch wait = Stopwatch.StartNew();
+                    while (!process.HasExited && wait.ElapsedMilliseconds < 30 * 60 * 1000) Thread.Sleep(100);
+                    if (!process.HasExited)
+                    {
+                        try { process.Kill(); } catch { }
+                    }
+                    Thread.Sleep(100);
+                    exitCode = process.ExitCode;
+                }
+            }
+            catch (Exception ex) { output.AppendLine(ex.ToString()); }
+            output.AppendLine("Launcher exit code: " + exitCode);
+            File.WriteAllText(logPath, output.ToString(), Encoding.UTF8);
+            Environment.ExitCode = exitCode;
+            if (exitCode != 0)
+            {
+                string detail = output.ToString();
+                if (detail.Length > 1500) detail = detail.Substring(detail.Length - 1500);
+                MessageBox.Show("开发服务启动失败：\n\n" + detail + "\n启动日志：\n" + logPath,
+                    "舞立方谱面编辑器 - 源码模式启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        const int KeptLaunchLogs = 10;
+
+        // Each source-mode launch writes its own log into the live user-data directory;
+        // keep only the newest ones so repeated launches do not accumulate files forever.
+        static void PruneLaunchLogs(string stateDir, int keep)
+        {
+            try
+            {
+                string[] logs = Directory.GetFiles(stateDir, "editor-launch-*.log", SearchOption.TopDirectoryOnly);
+                // Names embed a sortable UTC timestamp, so ordinal order is chronological.
+                Array.Sort(logs, StringComparer.Ordinal);
+                for (int i = 0; i < logs.Length - keep; i++)
+                {
+                    try { File.Delete(logs[i]); } catch { }
+                }
+            }
+            catch { }
         }
 
         static bool IsProcessRunning(int pid)
@@ -257,6 +326,17 @@ namespace DanceCubeArrangerLauncher
                 foreach (IPEndPoint endpoint in properties.GetActiveTcpListeners())
                 {
                     if (endpoint.Port == port) return false;
+                }
+                // Node 26 listeners are absent from GetActiveTcpListeners() and show
+                // up as Unknown connections with no remote port.
+                foreach (TcpConnectionInformation connection in properties.GetActiveTcpConnections())
+                {
+                    if (connection.LocalEndPoint.Port != port) continue;
+                    if (connection.State == TcpState.Listen ||
+                        (connection.State == TcpState.Unknown && connection.RemoteEndPoint.Port == 0))
+                    {
+                        return false;
+                    }
                 }
             }
             catch { }
@@ -317,7 +397,17 @@ namespace DanceCubeArrangerLauncher
 
             foreach (string path in candidates)
             {
-                if (File.Exists(path)) return path;
+                if (File.Exists(path))
+                {
+                    // 确保如果使用 standalone 目录，其静态资源 .next\static 必须存在，否则会导致前端无法加载静态 JS 白屏
+                    string serverDir = Path.GetDirectoryName(path);
+                    string staticDir = Path.Combine(serverDir, @".next\static");
+                    if (path.Contains("standalone") && !Directory.Exists(staticDir))
+                    {
+                        continue;
+                    }
+                    return path;
+                }
             }
 
             return null;

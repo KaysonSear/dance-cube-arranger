@@ -39,7 +39,7 @@ export interface ParsedChart {
 export function parseMc(text: string): ParsedChart {
   let root: unknown;
   try {
-    root = JSON.parse(text);
+    root = JSON.parse(text.replace(/^\uFEFF/, ""));
   } catch (e) {
     throw new McParseError(`not valid JSON: ${(e as Error).message}`);
   }

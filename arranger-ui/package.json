@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build",
+    "postbuild": "node -e \"const fs=require('fs'),p=require('path'),s=p.join('.next','static'),ds=p.join('.next','standalone','.next','static'),pub=p.join('public'),dpub=p.join('.next','standalone','public');if(fs.existsSync(s))fs.cpSync(s,ds,{recursive:true});if(fs.existsSync(pub))fs.cpSync(pub,dpub,{recursive:true});\"",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

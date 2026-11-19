@@ -26,7 +26,7 @@ export interface ProjectPanelProps {
   onAddChart(): void;
   buildMcText(): { text: string } | null;
   onOpen(src: string): void;
-  onExit(): void;
+  onRemoveCurrent(nextSrc: string | undefined, remove: () => Promise<boolean>, purge: boolean): Promise<void>;
   onToast(msg: string): void;
 }
 
@@ -68,7 +68,7 @@ export default function ProjectPanel(props: ProjectPanelProps) {
     action: "hide" | "unhide" | "purge",
   ) => {
     setBusy(true);
-    try {
+    const remove = async (): Promise<boolean> => {
       const res = await fetch("/api/projects/entry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,24 +77,26 @@ export default function ProjectPanel(props: ProjectPanelProps) {
       const j = await res.json();
       if (!res.ok || !j.ok) {
         props.onToast(String(j.error ?? "删除失败"));
-        return;
+        return false;
       }
       props.onToast(
         action === "purge" ? "已彻底删除文件" : action === "unhide" ? "已恢复" : "已从列表移除(文件保留)",
       );
       setConfirming(null);
-      if (scope === "project" && target === current?.dir) {
-        props.onExit();
-        return;
+      return true;
+    };
+    try {
+      const currentEntry = scope === "project" ? target === current?.dir : target === src;
+      if (currentEntry && action !== "unhide") {
+        const sibling = scope === "chart"
+          ? current?.charts.find((c) => c.src !== src && !c.missing && !c.hidden)
+          : undefined;
+        await props.onRemoveCurrent(sibling?.src, remove, action === "purge");
+      } else if (await remove()) {
+        await refresh();
       }
-      if (scope === "chart" && target === src && action !== "unhide") {
-        // 删掉的是当前打开的谱 → 切到同包其它谱,否则退回启动页
-        const sibling = current?.charts.find((c) => c.src !== target && !c.missing && !c.hidden);
-        if (sibling) props.onOpen(sibling.src);
-        else props.onExit();
-        return;
-      }
-      await refresh();
+    } catch (error) {
+      props.onToast(`工程列表更新失败：${(error as Error).message}`);
     } finally {
       setBusy(false);
     }

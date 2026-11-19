@@ -9,19 +9,13 @@ import { NextResponse } from "next/server";
 import { assignmentsFromJson, buildExportNotes, buildOnsets, mergeOnsets } from "@/lib/arrangement";
 import { buildArrangedMc, parseMc } from "@/lib/mc";
 import { managedSrc, type ManagedProjectRecord } from "@/lib/projects";
-import { fingerprintFile } from "@/lib/server/managed-projects";
-import { discoverAssetsIn, findRepoRoot, resolvePythonCommand, resolveSrc } from "@/lib/server/paths";
-import { readRegistry, readState, saveRegistry, writeJsonAtomic } from "@/lib/server/store";
+import { fingerprintFile, isProtectedWda, nextManagedCopy } from "@/lib/server/managed-projects";
+import { discoverAssetsIn, findRepoRoot, resolvePythonCommand, resolveSrc, sha1Hex } from "@/lib/server/paths";
+import { readRegistry, saveRegistry, writeJsonAtomic } from "@/lib/server/store";
+import { atomicWrite, commitWorkspaceCharts, readWorkspaceChart, WorkspaceConflict } from "@/lib/server/workspace-charts";
 import { validateArrangedMcText } from "@/lib/server/validate-mc";
 
 export const dynamic = "force-dynamic";
-
-function atomicWrite(file: string, data: string | Buffer): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.${Date.now()}.tmp`);
-  try { fs.writeFileSync(temp, data); fs.renameSync(temp, file); }
-  finally { if (fs.existsSync(temp)) fs.rmSync(temp, { force: true }); }
-}
 
 type BareAsset = { kind: "audio" | "cover"; source: string; target: string; data: Buffer };
 
@@ -90,29 +84,18 @@ function syncBareMc(
   return { conflicts: [], sourceAssets };
 }
 
-function materializeSavedState(src: string, file: string): void {
-  const key = crypto.createHash("sha1").update(src).digest("hex").slice(0, 16);
-  const state = readState(key);
-  if (!state) return;
-  const parsed = parseMc(fs.readFileSync(file, "utf-8"));
+function materializeSavedState(chart: ReturnType<typeof readWorkspaceChart>): string {
+  const { state, original } = chart;
+  if (!state) return original.toString("utf-8");
+  const parsed = parseMc(original.toString("utf-8"));
   const rawOnsets = mergeOnsets(buildOnsets(parsed.gameplay), state.addedOnsets ?? []);
   const deletedSet = new Set(state.deletedOnsetIds ?? []);
   const onsets = rawOnsets.filter((o) => !deletedSet.has(o.id));
   const built = buildExportNotes(onsets, assignmentsFromJson(state.assignments, onsets));
-  atomicWrite(file, buildArrangedMc(parsed, built.notes, {
-    bpm: state.ui.bpmOverride,
-    offsetMs: state.ui.offsetOverride,
-  }));
-}
-
-function uniqueManagedCopy(root: string, name: string): string {
-  const dir = path.join(root, "artifacts", "arranger", "managed");
-  fs.mkdirSync(dir, { recursive: true });
-  const ext = path.extname(name);
-  const stem = path.basename(name, ext);
-  let target = path.join(dir, name);
-  for (let index = 2; fs.existsSync(target); index += 1) target = path.join(dir, `${stem}-${index}${ext}`);
-  return target;
+  return buildArrangedMc(parsed, built.notes, {
+    bpm: state.ui?.bpmOverride,
+    offsetMs: state.ui?.offsetOverride,
+  });
 }
 
 function packageWorkspace(projectDir: string, names: string[], target: string): Promise<Record<string, unknown>> {
@@ -168,7 +151,8 @@ export async function POST(req: Request) {
   }
   let mcText: unknown;
   let overwriteAssets: unknown;
-  try { ({ mcText, overwriteAssets } = await req.json()); }
+  let expectSha1: unknown;
+  try { ({ mcText, overwriteAssets, expectSha1 } = await req.json()); }
   catch { return NextResponse.json({ ok: false, error: "请求 JSON 无效" }, { status: 400 }); }
   if (typeof mcText !== "string" || !mcText) {
     return NextResponse.json({ ok: false, error: "mcText (string) required" }, { status: 400 });
@@ -183,37 +167,43 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "找不到受管工程谱面" }, { status: 404 });
   }
   const savedAt = new Date().toISOString();
+  const sourceSha1 = sha1Hex(mcText);
   try {
-    atomicWrite(sr.abs, mcText);
+    const current = readWorkspaceChart(sr.abs, sr.rel, typeof expectSha1 === "string" ? expectSha1 : undefined);
+    const changes = [{ ...current, text: mcText }];
     for (const sibling of project.charts) {
       if (sibling.id === chart.id) continue;
-      materializeSavedState(
-        managedSrc(project.id, sibling.id),
+      const entry = readWorkspaceChart(
         path.join(findRepoRoot(), project.workspaceRel, sibling.fileName),
+        managedSrc(project.id, sibling.id),
       );
+      if (entry.state) changes.push({ ...entry, text: materializeSavedState(entry) });
     }
     project.updatedAt = savedAt;
-    saveRegistry(registry);
+    commitWorkspaceCharts(changes, () => saveRegistry(registry));
   } catch (error) {
+    if (error instanceof WorkspaceConflict) {
+      return NextResponse.json({ ok: false, conflict: true, error: error.message }, { status: 409 });
+    }
     return NextResponse.json({ ok: false, error: `工程保存未完成: ${(error as Error).message}` }, { status: 500 });
   }
   if (project.sourceKind === "workspace" || !project.sourcePath) {
-    return NextResponse.json({ ok: true, workspaceOnly: true, savedAt });
+    return NextResponse.json({ ok: true, workspaceOnly: true, savedAt, sourceSha1 });
   }
   if (!fs.existsSync(project.sourcePath)) {
     return NextResponse.json({
-      ok: true, workspaceOnly: true, syncSkippedReason: "source_missing", savedAt,
+      ok: true, workspaceOnly: true, syncSkippedReason: "source_missing", savedAt, sourceSha1,
     });
   }
 
   let target = project.sourcePath;
   let copyCreated = false;
-  if (project.copyOnWrite) {
-    target = uniqueManagedCopy(findRepoRoot(), path.basename(project.sourcePath));
+  if (project.copyOnWrite || isProtectedWda(project.sourcePath)) {
+    target = nextManagedCopy(path.basename(project.sourcePath));
     copyCreated = true;
   } else {
     if (!fs.existsSync(target)) {
-      return NextResponse.json({ ok: true, workspaceOnly: true, syncSkippedReason: "source_missing", savedAt });
+      return NextResponse.json({ ok: true, workspaceOnly: true, syncSkippedReason: "source_missing", savedAt, sourceSha1 });
     }
     const actual = fingerprintFile(target);
     if (project.sourceFingerprint && actual !== project.sourceFingerprint) {
@@ -250,6 +240,7 @@ export async function POST(req: Request) {
   saveRegistry(registry);
   return NextResponse.json({
     ok: true,
+    sourceSha1,
     copiedFromProtectedAsset: copyCreated,
     sourceKind: project.sourceKind,
     syncedAt: project.lastSyncedAt,

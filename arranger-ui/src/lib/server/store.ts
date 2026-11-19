@@ -12,11 +12,34 @@ import { ARTIFACTS_REL, findRepoRoot } from "./paths";
 
 export const SNAPSHOT_KEEP = 50;
 
+/** Windows 上目标文件被杀毒/索引/另一请求短暂占用时 rename 会报这些码,稍后重试即可。 */
+const TRANSIENT_RENAME_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
+const RENAME_ATTEMPTS = 5;
+const RENAME_BACKOFF_MS = 50;
+
+function renameWithRetry(from: string, to: string): void {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      fs.renameSync(from, to);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code ?? "";
+      if (attempt >= RENAME_ATTEMPTS || !TRANSIENT_RENAME_CODES.has(code)) throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, RENAME_BACKOFF_MS * attempt);
+    }
+  }
+}
+
 export function writeJsonAtomic(file: string, data: unknown): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
-  fs.renameSync(tmp, file);
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
+    renameWithRetry(tmp, file);
+  } finally {
+    // 成功时 tmp 已被 rename 走;失败时不在用户数据目录里留下孤儿 .tmp。
+    fs.rmSync(tmp, { force: true });
+  }
 }
 
 export function readJsonIfExists<T>(file: string): T | null {
@@ -37,7 +60,16 @@ function registryPath(): string {
 }
 
 export function readRegistry(): ProjectRegistryV3 {
-  return migrateProjectRegistry(readJsonIfExists<unknown>(registryPath()));
+  return migrateProjectRegistry(readStoredJson(registryPath()));
+}
+
+function readStoredJson(file: string): unknown {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf-8"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
 }
 
 export function saveRegistry(registry: ProjectRegistryV3): ProjectRegistryV3 {
@@ -70,7 +102,14 @@ export function snapshotsDir(key: string): string {
 }
 
 export function readState(key: string): WorkingStateV1 | null {
-  return readJsonIfExists<WorkingStateV1>(statePath(key));
+  const state = readStoredJson(statePath(key)) as WorkingStateV1 | undefined;
+  if (state === undefined) return null;
+  if (state?.schema !== 1 || typeof state.sourcePath !== "string" ||
+      typeof state.sourceSha1 !== "string" || !state.assignments ||
+      typeof state.assignments !== "object" || Array.isArray(state.assignments)) {
+    throw new Error("工作状态格式无效");
+  }
+  return state;
 }
 
 export function saveState(key: string, state: WorkingStateV1): void {

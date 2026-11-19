@@ -44,6 +44,17 @@ describe("UndoStack", () => {
     expect(s.redo()).toBeNull();
   });
 
+  it("resolves the current state without changing its undo or redo neighbors", () => {
+    const s = new UndoStack(0);
+    s.push(1);
+    s.push(2);
+    s.undo();
+    s.replaceCurrent(3);
+    expect(s.redo()).toBe(2);
+    expect(s.undo()).toBe(3);
+    expect(s.undo()).toBe(0);
+  });
+
   it("independent arrangement and structure histories do not clear each other's redo", () => {
     const arrangement = new UndoStack("notes-0");
     const structure = new UndoStack("segments-0");

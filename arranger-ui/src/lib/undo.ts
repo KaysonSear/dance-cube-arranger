@@ -13,6 +13,11 @@ export class UndoStack<T> {
     return this.present;
   }
 
+  /** Resolve a restored state's audio bounds without adding an undo step. */
+  replaceCurrent(state: T): void {
+    this.present = state;
+  }
+
   get canUndo(): boolean {
     return this.past.length > 0;
   }

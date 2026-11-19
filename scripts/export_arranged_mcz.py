@@ -1,8 +1,7 @@
 r"""Export an arranged .mc (from arranger-ui) into a Malody V .mcz.
 
-Reuses the proven export chain (ffmpeg OGG + JPEG cover + zip, via
-``src.export.exporter.export_chart``), mirroring the arranged chart's own meta and
-writing the audio-note offset back VERBATIM (missing offset -> 0 + stderr warning).
+Packages the original chart with normalized OGG audio and a JPEG cover. For a
+single-chart export, a missing audio offset defaults to 0 with a stderr warning.
 Prints ONE JSON line to stdout — the contract for arranger-ui's ``/api/export/mcz``
 route, which spawns this script with cwd = repo root and RELATIVE paths.
 
@@ -29,10 +28,9 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from bridge.audio import encode_ogg, normalize_cover  # noqa: E402
-from bridge.exporter import export_chart  # noqa: E402
-from bridge.mc_writer import ChartMeta, NoteEvent  # noqa: E402
+from bridge.exporter import AUDIO_NAME, CHART_NAME, COVER_NAME  # noqa: E402
 from bridge.mcz import package_mcz  # noqa: E402
-from bridge.mc_parser import parse_mc  # noqa: E402
+from bridge.mc_parser import Chart, parse_mc  # noqa: E402
 
 AUDIO_EXTS = {".mp3", ".ogg", ".wav"}
 COVER_EXTS = {".jpg", ".jpeg", ".png"}
@@ -67,6 +65,38 @@ def _pick_asset(folder: Path, exts: set[str], kind: str) -> Path:
     return candidates[0]
 
 
+def _chart_entry(mc_path: Path, *, default_offset: bool = False) -> tuple[bytes, Chart]:
+    raw = json.loads(mc_path.read_text(encoding="utf-8-sig"))
+    chart = parse_mc(raw)
+    if chart.meta.mode != 9:
+        raise ValueError(f"仅支持 mode:9: {mc_path.name}")
+    meta = raw["meta"]
+    if not isinstance(meta.get("song"), dict):
+        meta["song"] = {}
+    meta["song"]["file"] = AUDIO_NAME
+    meta["background"] = COVER_NAME
+    if "cover" in meta:
+        meta["cover"] = COVER_NAME
+    audio_note = next(note for note in raw["note"] if note.get("type") == 1)
+    audio_note["sound"] = AUDIO_NAME
+    if default_offset and chart.audio_note.offset is None:
+        print(
+            "WARNING: arranged .mc has no audio-note offset; exporting offset=0 "
+            "(check sync by ear in Malody V)",
+            file=sys.stderr,
+        )
+        audio_note["offset"] = 0
+    return json.dumps(raw, ensure_ascii=False, indent=2).encode("utf-8"), chart
+
+
+def _package_with_assets(entries: dict[str, bytes], audio: Path, cover: Path, out: Path) -> None:
+    with tempfile.TemporaryDirectory() as work:
+        work_dir = Path(work)
+        entries[AUDIO_NAME] = encode_ogg(audio, work_dir / AUDIO_NAME).read_bytes()
+        entries[COVER_NAME] = normalize_cover(cover, work_dir / COVER_NAME).read_bytes()
+        package_mcz(out, entries)
+
+
 def run(
     mc_path: str | Path,
     audio: str | Path | None = None,
@@ -74,47 +104,19 @@ def run(
     out: str | Path | None = None,
 ) -> dict:
     mc_file = Path(mc_path)
-    chart = parse_mc(str(mc_file))
+    entry, chart = _chart_entry(mc_file, default_offset=True)
 
     audio_src = Path(audio) if audio else _pick_asset(_DEFAULT_ASSETS_DIR, AUDIO_EXTS, "audio")
     cover_src = Path(cover) if cover else _pick_asset(_DEFAULT_ASSETS_DIR, COVER_EXTS, "cover")
     out_mcz = Path(out) if out else mc_file.with_suffix(".mcz")
 
-    offset = chart.audio_note.offset if chart.audio_note is not None else None
-    if offset is None:
-        print(
-            "WARNING: arranged .mc has no audio-note offset; exporting offset=0 "
-            "(check sync by ear in Malody V)",
-            file=sys.stderr,
-        )
-        offset = 0
-
-    bpm = float(chart.time_map[0].bpm) if chart.time_map else float(chart.meta.song.bpm or 120.0)
-    m = chart.meta
-    bar_begin = m.mode_ext.bar_begin if m.mode_ext and m.mode_ext.bar_begin is not None else 0
-    meta = ChartMeta(
-        chart_id=0,
-        creator=m.creator or "arranger-ui",
-        version=m.version or "Arranged",
-        title=m.song.title or mc_file.stem,
-        artist=m.song.artist or "",
-        bpm=bpm,
-        cover_file="cover.jpg",
-        song_id=1,
-        preview_ms=0,
-        bar_begin=bar_begin,
-        speed=0,
-    )
-    events = [
-        NoteEvent(beat=n.beat, column=n.column, endbeat=n.endbeat) for n in chart.gameplay_notes
-    ]
-    out_path = export_chart(events, meta, audio_src, cover_src, out_mcz, offset_ms=offset)
+    _package_with_assets({CHART_NAME: entry}, audio_src, cover_src, out_mcz)
     return {
         "ok": True,
-        "out": str(out_path),
-        "n_notes": len(events),
-        "offset": offset,
-        "bpm": bpm,
+        "out": str(out_mcz),
+        "n_notes": len(chart.gameplay_notes),
+        "offset": chart.audio_note.offset if chart.audio_note.offset is not None else 0,
+        "bpm": chart.time_map[0].bpm,
     }
 
 
@@ -133,28 +135,10 @@ def run_manifest(manifest_path: str | Path) -> dict:
 
     entries: dict[str, bytes] = {}
     reports: list[dict] = []
-    with tempfile.TemporaryDirectory() as work:
-        work_dir = Path(work)
-        audio_ogg = encode_ogg(audio_src, work_dir / "audio.ogg")
-        cover_jpg = normalize_cover(cover_src, work_dir / "cover.jpg")
-        entries["audio.ogg"] = audio_ogg.read_bytes()
-        entries["cover.jpg"] = cover_jpg.read_bytes()
-        for item, name in zip(charts, names, strict=True):
-            mc_path = Path(item["path"])
-            parsed = parse_mc(str(mc_path))
-            if parsed.meta.mode != 9:
-                raise ValueError(f"仅支持 mode:9: {name}")
-            raw = json.loads(mc_path.read_text(encoding="utf-8"))
-            meta = raw.setdefault("meta", {})
-            song = meta.setdefault("song", {})
-            song["file"] = "audio.ogg"
-            meta["background"] = "cover.jpg"
-            for note in raw.get("note", []):
-                if isinstance(note, dict) and note.get("type") == 1:
-                    note["sound"] = "audio.ogg"
-            entries[name] = json.dumps(raw, ensure_ascii=False, indent=2).encode("utf-8")
-            reports.append({"name": name, "n_notes": len(parsed.gameplay_notes)})
-        package_mcz(out_mcz, entries)
+    for item, name in zip(charts, names, strict=True):
+        entries[name], parsed = _chart_entry(Path(item["path"]))
+        reports.append({"name": name, "n_notes": len(parsed.gameplay_notes)})
+    _package_with_assets(entries, audio_src, cover_src, out_mcz)
     return {"ok": True, "out": str(out_mcz), "charts": reports}
 
 

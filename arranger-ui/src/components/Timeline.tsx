@@ -28,6 +28,8 @@ import { beatToFloat } from "@/lib/beat";
 import { noteColor } from "@/lib/colors";
 import { fmtTime } from "@/lib/format";
 import {
+  getUpgradeLevel,
+  relationBadge,
   relationIndexesForSegment,
   type SegmentRange,
   type SegmentRelationV1,
@@ -273,7 +275,11 @@ export default function Timeline(props: TimelineProps) {
         let badgeX = right - 3;
         for (const relationIndex of relationIndexes.toReversed()) {
           const relation = propsRef.current.segmentRelations[relationIndex];
-          const badge = relationBadge(relation.kind, relationIndex + 1);
+          const level =
+            relation.kind === "upgrade"
+              ? getUpgradeLevel(relation, segment.id, propsRef.current.segments)
+              : undefined;
+          const badge = relationBadge(relation.kind, relationIndex + 1, level);
           ctx.fillStyle = relationGroupColor(relationIndex);
           ctx.fillText(badge, badgeX, RULER_H + 11);
           badgeX -= ctx.measureText(badge).width + 4;
@@ -740,11 +746,4 @@ export default function Timeline(props: TimelineProps) {
       />
     </div>
   );
-}
-
-function relationBadge(kind: SegmentRelationV1["kind"], index: number): string {
-  const prefix = { repeat: "R", upgrade: "U", variation: "V", contrast: "C", custom: "X" }[
-    kind
-  ];
-  return `${prefix}${index}`;
 }

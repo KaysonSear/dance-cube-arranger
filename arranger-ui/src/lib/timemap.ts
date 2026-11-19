@@ -1,9 +1,8 @@
 /**
- * beat ↔ 时间映射(多 BPM 分段,移植 src/pipeline/time_map.py)+ offset 符号统一。
+ * beat ↔ 时间映射(多 BPM 分段)+ Malody 有符号音频 offset。
  *
- * offset 语义(docs/offset_convention.md):.mc 音频 note 的 offset = beat 0 落在音频的
- * 毫秒位置;语料为正(+392 → 0.392s),WDA_Recorded.mc 存 −463(相反符号约定,实测首拍
- * ≈0.42–0.47s,人耳定案)。两种约定物理含义一致 → 统一 beat0AudioSec = |offset|/1000。
+ * 音频时间 = 谱面时间 − offset/1000。正 offset 使音符对应的音频时间提前,
+ * 负 offset 使其推迟;不可取绝对值。+173 → −0.173s,−463 → +0.463s。
  * nudge 仅作用于预览,绝不写回 .mc。
  */
 
@@ -77,9 +76,9 @@ export function chartSecToBeat(sec: number, tm: TimePoint[]): number {
   return prev.beat + ((sec - segStart) * prev.bpm) / 60;
 }
 
-/** beat 0 在音频中的秒位置:|offset|/1000;offset 缺失(null)→ 0(上层须警示)。 */
+/** 谱面零时刻对应的音频秒数:−offset/1000;缺失(null)→ 0(上层须警示)。 */
 export function beat0AudioSec(offsetMs: number | null): number {
-  return offsetMs == null ? 0 : Math.abs(offsetMs) / 1000;
+  return offsetMs == null || offsetMs === 0 ? 0 : -offsetMs / 1000;
 }
 
 export interface TimingContext {

@@ -15,6 +15,13 @@ function Stop-EditorProcessTree {
     $processIds += $LauncherPid
 
     foreach ($processId in ($processIds | Select-Object -Unique)) {
+        # /T also terminates npm.cmd -> next CLI -> server descendants, so a
+        # failed readiness check cannot leave an orphan holding Next's lock.
+        try {
+            & taskkill.exe /PID $processId /T /F 2>$null | Out-Null
+        } catch {
+            # Fall back to terminating the single process below.
+        }
         Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
     }
 }

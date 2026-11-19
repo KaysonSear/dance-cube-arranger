@@ -59,9 +59,10 @@ describe("beatToChartSec / chartSecToBeat", () => {
   });
 });
 
-describe("beat0AudioSec — offset 符号统一", () => {
-  it("corpus-positive, WDA-negative, missing", () => {
-    expect(beat0AudioSec(392)).toBeCloseTo(0.392, 12);
+describe("beat0AudioSec — Malody signed offset", () => {
+  it("positive advances, negative delays, missing and zero stay zero", () => {
+    expect(beat0AudioSec(173)).toBeCloseTo(-0.173, 12);
+    expect(beat0AudioSec(392)).toBeCloseTo(-0.392, 12);
     expect(beat0AudioSec(-463)).toBeCloseTo(0.463, 12);
     expect(beat0AudioSec(null)).toBe(0);
     expect(beat0AudioSec(0)).toBe(0);
@@ -88,6 +89,31 @@ describe("beatToAudioSec / audioSecToBeat", () => {
   it("round-trips", () => {
     const t = beatToAudioSec(123.25, wda);
     expect(audioSecToBeat(t, wda)).toBeCloseTo(123.25, 9);
+  });
+
+  it("WDA +173ms: beat 17 maps to 9.729913s, not 10.075913s", () => {
+    const ctx = { ...wda, offsetMs: 173 };
+    const sec = beatToAudioSec(17, ctx);
+    expect(sec).toBeCloseTo(9.729912621359222, 12);
+    expect(audioSecToBeat(sec, ctx)).toBeCloseTo(17, 12);
+    expect(beatToAudioSec(0, ctx)).toBeCloseTo(-0.173, 12);
+    expect(audioSecToBeat(0, ctx)).toBeCloseTo(0.173 * 103 / 60, 12);
+  });
+
+  it.each([173, -463, 0, null])("offset %s preserves BPM changes, delay and preview compensation", (offsetMs) => {
+    const offsetSec = offsetMs === null ? 0 : -offsetMs / 1000;
+    for (const nudgeMs of [-50, 0, 50]) {
+      const ctx: TimingContext = {
+        timeMap: [{ ...TWO_SEG[0], delayMs: 200 }, TWO_SEG[1]],
+        offsetMs,
+        nudgeMs,
+      };
+      for (const [beat, chartSec] of [[0, 0.2], [2, 2.2], [4, 4.2], [6, 5.2]]) {
+        const expected = chartSec + offsetSec + nudgeMs / 1000;
+        expect(beatToAudioSec(beat, ctx)).toBeCloseTo(expected, 12);
+        expect(audioSecToBeat(expected, ctx)).toBeCloseTo(beat, 12);
+      }
+    }
   });
 });
 

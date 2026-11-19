@@ -57,11 +57,14 @@ export interface SegmentRange extends SegmentClipV2 {
 
 export type SegmentRelationKind = "repeat" | "upgrade" | "variation" | "contrast" | "custom";
 
+export type UpgradeLevel = "Easy" | "Hard";
+
 export interface SegmentRelationV1 {
   id: string;
   kind: SegmentRelationKind;
   segmentIds: string[];
   note?: string;
+  upgradeLevels?: Record<string, UpgradeLevel>;
 }
 
 export interface TimedPoint {
@@ -141,11 +144,15 @@ export const SEGMENT_RELATION_KINDS: readonly SegmentRelationKind[] = [
   "custom",
 ];
 
+/** 升级等级推导只需要 clip 的起点。 */
+type ClipStart = Pick<SegmentClipV2, "id" | "startSec">;
+
 function cleanRelations(
   relations: readonly SegmentRelationV1[] | undefined,
-  validIds: ReadonlySet<string>,
+  clips: readonly ClipStart[],
   replaceId?: { from: string; to: string },
 ): SegmentRelationV1[] {
+  const validIds = new Set(clips.map((item) => item.id));
   const used = new Set<string>();
   const output: SegmentRelationV1[] = [];
   for (const [index, relation] of (relations ?? []).entries()) {
@@ -160,14 +167,51 @@ function cleanRelations(
       validIds.has(segmentId),
     );
     if (segmentIds.length < 2) continue;
-    output.push({
+    let upgradeLevels: Record<string, UpgradeLevel> | undefined;
+    if (relation.upgradeLevels) {
+      upgradeLevels = {};
+      for (const segId of segmentIds) {
+        // 合并 clip 时幸存者保留自己的等级;只有它没有等级时才继承被并入者的。
+        const absorbed = replaceId && replaceId.to === segId ? replaceId.from : null;
+        const level =
+          relation.upgradeLevels[segId] ?? (absorbed ? relation.upgradeLevels[absorbed] : undefined);
+        if (level) upgradeLevels[segId] = level;
+      }
+      if (Object.keys(upgradeLevels).length === 0) {
+        upgradeLevels = undefined;
+      }
+    }
+    const cleaned: SegmentRelationV1 = {
       id,
       kind: relation.kind,
       segmentIds,
+      ...(upgradeLevels ? { upgradeLevels } : {}),
       ...(relation.note ? { note: String(relation.note) } : {}),
-    });
+    };
+    // 删除/合并可能带走组内唯一的 Easy:有显式等级的升级组重新落定为恰好一个 Easy。
+    output.push(cleaned.upgradeLevels ? settleUpgradeLevels(cleaned, clips) : cleaned);
   }
   return output;
+}
+
+/**
+ * 升级组的等级不变量:恰好一个 Easy,其余 Hard。缺失的等级按 `getUpgradeLevel` 推导;
+ * 没有 Easy 时取最早的 clip,多个 Easy 时只保留最早的那个。非升级关系原样返回。
+ */
+function settleUpgradeLevels(
+  relation: SegmentRelationV1,
+  clips: readonly ClipStart[],
+): SegmentRelationV1 {
+  if (relation.kind !== "upgrade" || relation.segmentIds.length === 0) return relation;
+  const starts = new Map(clips.map((item) => [item.id, item.startSec]));
+  const ordered = relation.segmentIds.toSorted(
+    (a, b) => (starts.get(a) ?? 0) - (starts.get(b) ?? 0),
+  );
+  const easy =
+    ordered.find((id) => getUpgradeLevel(relation, id, clips) === "Easy") ?? ordered[0];
+  const upgradeLevels: Record<string, UpgradeLevel> = {};
+  for (const id of relation.segmentIds) upgradeLevels[id] = id === easy ? "Easy" : "Hard";
+  return { ...relation, upgradeLevels };
 }
 
 function pointInClip(point: TimedPoint, clip: SegmentClipV2, nextStart?: number): boolean {
@@ -189,11 +233,10 @@ function pruneEmptyClips(
   const kept = clips.filter((item, index) =>
     points.some((point) => pointInClip(point, item, clips[index + 1]?.startSec)),
   );
-  const validIds = new Set(kept.map((item) => item.id));
   return {
     ...structure,
     clips: kept,
-    relations: cleanRelations(structure.relations, validIds),
+    relations: cleanRelations(structure.relations, kept),
   };
 }
 
@@ -227,13 +270,12 @@ function normalizeV2(
     })
     .filter((item) => item.endSec > item.startSec + EPS)
     .toSorted((a, b) => a.startSec - b.startSec || a.endSec - b.endSec);
-  const validIds = new Set(clips.map((item) => item.id));
   const clean: SegmentStructureV2 = {
     schema: 3,
     initialized: value.initialized === true || clips.length > 0,
     source: value.source === "auto" ? "auto" : value.source === "manual" ? "manual" : undefined,
     clips,
-    relations: cleanRelations(value.relations, validIds),
+    relations: cleanRelations(value.relations, clips),
   };
   return points ? pruneEmptyClips(clean, points) : clean;
 }
@@ -278,7 +320,7 @@ export function restoreSegmentStructure(
   duration: number,
   points: readonly TimedPoint[],
 ): SegmentStructureV2 {
-  if (value && (value.schema !== 3 || value.source === "auto")) {
+  if (value?.source === "auto") {
     return { schema: 3, initialized: true, source: "manual", clips: [], relations: [] };
   }
   return normalizeSegmentStructure(value, duration, points);
@@ -401,7 +443,6 @@ export function mergeClips(
   };
   const next = [...clips];
   next.splice(leftIndex, 2, merged);
-  const validIds = new Set(next.map((item) => item.id));
   return {
     ok: true,
     structure: {
@@ -409,7 +450,7 @@ export function mergeClips(
       initialized: true,
       source: "manual",
       clips: next,
-      relations: cleanRelations(structure.relations, validIds, { from: right.id, to: left.id }),
+      relations: cleanRelations(structure.relations, next, { from: right.id, to: left.id }),
     },
   };
 }
@@ -420,13 +461,12 @@ export function removeClip(
 ): SegmentStructureV2 {
   if (!structure.clips.some((item) => item.id === clipId)) return structure;
   const clips = structure.clips.filter((item) => item.id !== clipId);
-  const validIds = new Set(clips.map((item) => item.id));
   return {
     ...structure,
     initialized: true,
     source: "manual",
     clips,
-    relations: cleanRelations(structure.relations, validIds),
+    relations: cleanRelations(structure.relations, clips),
   };
 }
 
@@ -543,7 +583,19 @@ export function ensureRelation(
     (relation) => relation.kind === kind && relation.segmentIds.join("\u0000") === key,
   );
   if (existing) return { ok: true, structure, relation: existing, created: false };
-  const relation: SegmentRelationV1 = { id: relationId, kind, segmentIds };
+  let upgradeLevels: Record<string, UpgradeLevel> | undefined;
+  if (kind === "upgrade") {
+    upgradeLevels = {};
+    segmentIds.forEach((id, idx) => {
+      upgradeLevels![id] = idx === 0 ? "Easy" : "Hard";
+    });
+  }
+  const relation: SegmentRelationV1 = {
+    id: relationId,
+    kind,
+    segmentIds,
+    ...(upgradeLevels ? { upgradeLevels } : {}),
+  };
   return {
     ok: true,
     structure: {
@@ -677,9 +729,21 @@ export function updateRelationKind(
     ...structure,
     initialized: true,
     source: "manual",
-    relations: structure.relations.map((relation) =>
-      relation.id === relationId ? { ...relation, kind } : relation,
-    ),
+    relations: structure.relations.map((relation) => {
+      if (relation.id !== relationId) return relation;
+      if (kind === "upgrade" && !relation.upgradeLevels) {
+        const upgradeLevels: Record<string, UpgradeLevel> = {};
+        const clipsMap = new Map(structure.clips.map((c) => [c.id, c.startSec]));
+        const sorted = [...relation.segmentIds].sort(
+          (a, b) => (clipsMap.get(a) ?? 0) - (clipsMap.get(b) ?? 0),
+        );
+        sorted.forEach((id, idx) => {
+          upgradeLevels[id] = idx === 0 ? "Easy" : "Hard";
+        });
+        return { ...relation, kind, upgradeLevels };
+      }
+      return { ...relation, kind };
+    }),
   };
 }
 
@@ -707,6 +771,182 @@ export function removeRelation(
     initialized: true,
     source: "manual",
     relations: structure.relations.filter((relation) => relation.id !== relationId),
+  };
+}
+
+export function relationBadge(
+  kind: SegmentRelationKind,
+  index: number,
+  level?: UpgradeLevel,
+): string {
+  const prefix = { repeat: "R", upgrade: "U", variation: "V", contrast: "C", custom: "X" }[kind];
+  if (kind === "upgrade" && level) {
+    return `${prefix}${index}-${level}`;
+  }
+  return `${prefix}${index}`;
+}
+
+/**
+ * clip 在升级组中的等级。显式等级优先;缺失时推导,且推导结果与已存的等级不冲突:
+ * 组内已有显式 Easy → Hard;否则在未标等级的成员里取起点最早者为 Easy。
+ */
+export function getUpgradeLevel(
+  relation: SegmentRelationV1,
+  segmentId: string,
+  clips: readonly ClipStart[],
+): UpgradeLevel {
+  const levels = relation.upgradeLevels ?? {};
+  if (levels[segmentId]) return levels[segmentId];
+  if (relation.segmentIds.some((id) => levels[id] === "Easy")) return "Hard";
+  const starts = new Map(clips.map((item) => [item.id, item.startSec]));
+  const earliest = relation.segmentIds
+    .filter((id) => !levels[id])
+    .toSorted((a, b) => (starts.get(a) ?? 0) - (starts.get(b) ?? 0))[0];
+  return earliest === segmentId ? "Easy" : "Hard";
+}
+
+export function swapUpgradeLevel(
+  structure: SegmentStructureV2,
+  relationId: string,
+  segmentId: string,
+): SegmentStructureV2 {
+  return {
+    ...structure,
+    initialized: true,
+    source: "manual",
+    relations: structure.relations.map((relation) => {
+      if (relation.id !== relationId || relation.kind !== "upgrade") return relation;
+      const currentLevel = getUpgradeLevel(relation, segmentId, structure.clips);
+      const targetLevel: UpgradeLevel = currentLevel === "Easy" ? "Hard" : "Easy";
+      const nextLevels: Record<string, UpgradeLevel> = {};
+      for (const id of relation.segmentIds) {
+        nextLevels[id] = getUpgradeLevel(relation, id, structure.clips);
+      }
+      nextLevels[segmentId] = targetLevel;
+      // 将同组中原先为 targetLevel 的其他 clip 设为 currentLevel（角色互换）
+      for (const id of relation.segmentIds) {
+        if (id !== segmentId && nextLevels[id] === targetLevel) {
+          nextLevels[id] = currentLevel;
+          break;
+        }
+      }
+      return settleUpgradeLevels({ ...relation, upgradeLevels: nextLevels }, structure.clips);
+    }),
+  };
+}
+
+/**
+ * 徽章下拉能否把 clip 从 from 关系移到 target 关系。变奏关系严格一对一,
+ * 已满的变奏组不接收新成员(与 `ensureRelation` 的约束一致)。
+ */
+export function canReassignTo(
+  structure: SegmentStructureV2,
+  segmentId: string,
+  fromRelationId: string,
+  targetRelationId: string,
+): boolean {
+  if (fromRelationId === targetRelationId) return false;
+  const fromRel = structure.relations.find((r) => r.id === fromRelationId);
+  const targetRel = structure.relations.find((r) => r.id === targetRelationId);
+  if (!fromRel || !targetRel) return false;
+  if (targetRel.kind === "variation") {
+    return new Set([...targetRel.segmentIds, segmentId]).size <= 2;
+  }
+  return true;
+}
+
+/** 从关系中移出 clip:不足 2 个成员则解散;升级组重新落定等级(不留下无 Easy 的组)。 */
+function withoutSegment(
+  relation: SegmentRelationV1,
+  segmentId: string,
+  clips: readonly ClipStart[],
+): SegmentRelationV1 | null {
+  const remaining = relation.segmentIds.filter((id) => id !== segmentId);
+  if (remaining.length < 2) return null;
+  const { upgradeLevels, ...rest } = relation;
+  const nextLevels = { ...upgradeLevels };
+  delete nextLevels[segmentId];
+  const next: SegmentRelationV1 = {
+    ...rest,
+    segmentIds: remaining,
+    ...(Object.keys(nextLevels).length ? { upgradeLevels: nextLevels } : {}),
+  };
+  return relation.kind === "upgrade" ? settleUpgradeLevels(next, clips) : next;
+}
+
+export function reassignRelationGroup(
+  structure: SegmentStructureV2,
+  segmentId: string,
+  fromRelationId: string,
+  targetRelationId: string,
+  targetLevel?: UpgradeLevel,
+): SegmentStructureV2 {
+  if (!canReassignTo(structure, segmentId, fromRelationId, targetRelationId)) return structure;
+  const fromRel = structure.relations.find((r) => r.id === fromRelationId)!;
+  const targetRel = structure.relations.find((r) => r.id === targetRelationId)!;
+  const clips = structure.clips;
+
+  // Case 1: 多个同类型 Repeat 组互斥，原 R 组所有 clip 同步并入目标 R 组
+  if (fromRel.kind === "repeat" && targetRel.kind === "repeat") {
+    const combinedIds = Array.from(new Set([...targetRel.segmentIds, ...fromRel.segmentIds]));
+    return {
+      ...structure,
+      initialized: true,
+      source: "manual",
+      relations: structure.relations
+        .filter((r) => r.id !== fromRelationId)
+        .map((r) => (r.id === targetRelationId ? { ...r, segmentIds: combinedIds } : r)),
+    };
+  }
+
+  // Case 2: U 与 R 不互斥，可同时存在同一个 clip 上
+  const isCrossKind =
+    (fromRel.kind === "upgrade" && targetRel.kind === "repeat") ||
+    (fromRel.kind === "repeat" && targetRel.kind === "upgrade");
+
+  // 同类关系迁移（如 U1 迁往 U2）从原关系移出;跨类加入时只清理目标类型下的旧同类关系。
+  const leaves = (r: SegmentRelationV1) =>
+    r.id !== targetRelationId &&
+    r.segmentIds.includes(segmentId) &&
+    (isCrossKind ? r.kind === targetRel.kind : r.id === fromRelationId);
+  let nextRelations = structure.relations
+    .map((r) => (leaves(r) ? withoutSegment(r, segmentId, clips) : r))
+    .filter((r): r is SegmentRelationV1 => r !== null);
+
+  // 将 clip 加入目标关系组
+  nextRelations = nextRelations.map((r) => {
+    if (r.id !== targetRelationId) return r;
+    const segmentIds = r.segmentIds.includes(segmentId) ? r.segmentIds : [...r.segmentIds, segmentId];
+    if (r.kind !== "upgrade") return { ...r, segmentIds };
+    // 先按加入前的成员把等级补全,新成员不影响老成员的推导结果。
+    const levels: Record<string, UpgradeLevel> = {};
+    for (const id of r.segmentIds) levels[id] = getUpgradeLevel(r, id, clips);
+    const level = targetLevel ?? levels[segmentId] ?? "Hard";
+    if (level === "Easy") for (const id of r.segmentIds) levels[id] = "Hard"; // 新 Easy 取代旧 Easy
+    levels[segmentId] = level;
+    return settleUpgradeLevels({ ...r, segmentIds, upgradeLevels: levels }, clips);
+  });
+
+  return {
+    ...structure,
+    initialized: true,
+    source: "manual",
+    relations: nextRelations,
+  };
+}
+
+export function unlinkSegmentFromRelation(
+  structure: SegmentStructureV2,
+  segmentId: string,
+  relationId: string,
+): SegmentStructureV2 {
+  return {
+    ...structure,
+    initialized: true,
+    source: "manual",
+    relations: structure.relations
+      .map((r) => (r.id === relationId ? withoutSegment(r, segmentId, structure.clips) : r))
+      .filter((r): r is SegmentRelationV1 => r !== null),
   };
 }
 

@@ -130,6 +130,16 @@ export function isProtectedWda(source: string): boolean {
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
+export function nextManagedCopy(name: string): string {
+  const dir = path.join(findRepoRoot(), "artifacts", "arranger", "managed");
+  fs.mkdirSync(dir, { recursive: true });
+  const ext = path.extname(name);
+  const stem = path.basename(name, ext);
+  let target = path.join(dir, name);
+  for (let index = 2; fs.existsSync(target); index++) target = path.join(dir, `${stem}-${index}${ext}`);
+  return target;
+}
+
 function copySiblingAssets(source: string, workspace: string): void {
   const sourceDir = path.dirname(source);
   for (const name of fs.readdirSync(sourceDir)) {

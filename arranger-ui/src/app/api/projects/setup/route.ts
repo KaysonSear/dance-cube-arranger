@@ -4,6 +4,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 
 import { applyChartSetup, patchChartAssetRefs } from "@/lib/chart-setup";
+import { managedSrc } from "@/lib/projects";
 import { validateAssetUpload } from "@/lib/server/project-assets";
 import {
   AUDIO_EXTS,
@@ -13,16 +14,11 @@ import {
   resolveSrc,
   sha1Hex,
 } from "@/lib/server/paths";
-import { readRegistry, readState, saveRegistry, saveState } from "@/lib/server/store";
+import { readRegistry, saveRegistry } from "@/lib/server/store";
+import { atomicWrite, commitWorkspaceCharts, readWorkspaceChart, WorkspaceConflict, type WorkspaceChange } from "@/lib/server/workspace-charts";
 import { validateArrangedMcText } from "@/lib/server/validate-mc";
 
 export const dynamic = "force-dynamic";
-
-function atomicWrite(file: string, data: string | Buffer): void {
-  const temp = `${file}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`;
-  try { fs.writeFileSync(temp, data); fs.renameSync(temp, file); }
-  finally { if (fs.existsSync(temp)) fs.rmSync(temp, { force: true }); }
-}
 
 function filesWithExtensions(dir: string, extensions: string[]): string[] {
   return listAssets(
@@ -45,9 +41,6 @@ export async function POST(req: Request) {
   const expectSha1 = form.get("expectSha1");
   if (typeof mcText !== "string" || !mcText || typeof metadataText !== "string") {
     return NextResponse.json({ ok: false, error: "mcText 与 metadata 必填" }, { status: 400 });
-  }
-  if (typeof expectSha1 === "string" && expectSha1 && expectSha1 !== sha1Hex(fs.readFileSync(sr.abs))) {
-    return NextResponse.json({ ok: false, conflict: true, error: "谱面已被另一标签页修改，请重新载入" }, { status: 409 });
   }
   let metadata: unknown;
   try { metadata = JSON.parse(metadataText); }
@@ -79,30 +72,36 @@ export async function POST(req: Request) {
     audioName: audio?.name ?? oldAudioNames[0] ?? null,
     coverName: cover?.name ?? oldCoverNames[0] ?? null,
   };
-  const originals = new Map<string, Buffer>();
-  const updates = new Map<string, string>();
+  const changes: WorkspaceChange[] = [];
+  let currentText = mcText;
   try {
     for (const chart of project.charts) {
+      const active = chart.id === sr.managed.chartId;
+      if (!active && !audio && !cover) continue;
       const file = path.join(workspace, chart.fileName);
-      const original = fs.readFileSync(file);
-      originals.set(file, original);
-      const source = chart.id === sr.managed.chartId ? mcText : original.toString("utf-8");
-      if (chart.id === sr.managed.chartId) {
-        const result = applyChartSetup(source, metadata, refs);
+      const entry = readWorkspaceChart(file, managedSrc(project.id, chart.id),
+        active && typeof expectSha1 === "string" && expectSha1 ? expectSha1 : undefined);
+      if (active) {
+        const result = applyChartSetup(mcText, metadata, refs);
         if (!result.ok) throw new Error(result.error);
-        updates.set(file, result.text);
-      } else if (audio || cover) {
-        updates.set(file, patchChartAssetRefs(source, {
+        currentText = result.text;
+        changes.push({ ...entry, text: result.text });
+      } else {
+        const text = patchChartAssetRefs(entry.original.toString("utf-8"), {
           ...(audio ? { audioName: refs.audioName } : {}),
           ...(cover ? { coverName: refs.coverName } : {}),
-        }));
+        });
+        changes.push({ ...entry, text });
       }
     }
-    for (const text of updates.values()) {
+    for (const { text } of changes) {
       const checked = validateArrangedMcText(text);
       if (!checked.ok) throw new Error(checked.errors.join("；"));
     }
   } catch (error) {
+    if (error instanceof WorkspaceConflict) {
+      return NextResponse.json({ ok: false, conflict: true, error: error.message }, { status: 409 });
+    }
     return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 422 });
   }
 
@@ -120,29 +119,16 @@ export async function POST(req: Request) {
       for (const name of oldCoverNames) fs.rmSync(path.join(workspace, name), { force: true });
       atomicWrite(path.join(workspace, cover.name), cover.data);
     }
-    for (const [file, text] of updates) atomicWrite(file, text);
     project.updatedAt = new Date().toISOString();
-    saveRegistry(registry);
+    commitWorkspaceCharts(changes, () => saveRegistry(registry));
   } catch (error) {
-    for (const file of updates.keys()) {
-      const original = originals.get(file);
-      if (original) atomicWrite(file, original);
-    }
     if (audio) for (const name of filesWithExtensions(workspace, AUDIO_EXTS)) fs.rmSync(path.join(workspace, name), { force: true });
     if (cover) for (const name of filesWithExtensions(workspace, COVER_EXTS)) fs.rmSync(path.join(workspace, name), { force: true });
     for (const [file, data] of oldAssets) atomicWrite(file, data);
     return NextResponse.json({ ok: false, error: `配置更新已回滚: ${(error as Error).message}` }, { status: 422 });
   }
 
-  const currentText = updates.get(sr.abs) ?? mcText;
   const sourceSha1 = sha1Hex(currentText);
-  const state = readState(sr.key);
-  if (state && state.sourcePath === sr.rel) {
-    state.sourceSha1 = sourceSha1;
-    // The workspace and registry are already committed. A stale/missing editor-state
-    // cache must not turn that successful transaction into a misleading HTTP failure.
-    try { saveState(sr.key, state); } catch { /* the next autosave recreates this cache */ }
-  }
   return NextResponse.json({
     ok: true,
     text: currentText,

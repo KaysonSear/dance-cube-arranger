@@ -61,15 +61,16 @@ Copy-Item -Path (Join-Path $SourceBase "*") -Destination $ServerDir -Recurse -Fo
 $StaticSrc = Join-Path $UiDir ".next\static"
 $StaticDest = Join-Path $ServerDir ".next\static"
 if (Test-Path -LiteralPath $StaticSrc) {
-    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $StaticDest) | Out-Null
-    Copy-Item -Path $StaticSrc -Destination $StaticDest -Recurse -Force
+    New-Item -ItemType Directory -Force -Path $StaticDest | Out-Null
+    Copy-Item -Path (Join-Path $StaticSrc "*") -Destination $StaticDest -Recurse -Force
 }
 
 # 复制 public 到 server/public
 $PublicSrc = Join-Path $UiDir "public"
 $PublicDest = Join-Path $ServerDir "public"
 if (Test-Path -LiteralPath $PublicSrc) {
-    Copy-Item -Path $PublicSrc -Destination $PublicDest -Recurse -Force
+    New-Item -ItemType Directory -Force -Path $PublicDest | Out-Null
+    Copy-Item -Path (Join-Path $PublicSrc "*") -Destination $PublicDest -Recurse -Force
 }
 
 # 4. 复制配置、脚本与工程素材
