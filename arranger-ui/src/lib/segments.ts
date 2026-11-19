@@ -338,7 +338,7 @@ export function restoreSegmentStructure(
   duration: number,
   points: readonly TimedPoint[],
 ): SegmentStructureV2 {
-  if (value && (value.schema !== 3 || value.source === "auto")) {
+  if (value?.source === "auto") {
     return { schema: 3, initialized: true, source: "manual", clips: [], relations: [] };
   }
   return normalizeSegmentStructure(value, duration, points);

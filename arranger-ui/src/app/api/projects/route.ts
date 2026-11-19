@@ -42,8 +42,10 @@ export async function GET(req: Request) {
   const includeHidden = new URL(req.url).searchParams.get("includeHidden") === "1";
   // V2 imports are adopted in place into V3; files, states and snapshots remain untouched.
   const importsAbs = path.join(root, IMPORTS_REL);
+  const skipped = readRegistry();
   if (fs.existsSync(importsAbs)) {
     for (const sub of fs.readdirSync(importsAbs)) {
+      if (skipped.purgedImportDirs?.includes(sub.toLowerCase())) continue;
       const dirAbs = path.join(importsAbs, sub);
       if (!fs.statSync(dirAbs).isDirectory()) continue;
       const charts = listAssets(fs.readdirSync(dirAbs), MC_EXTS);
@@ -61,6 +63,7 @@ export async function GET(req: Request) {
   const wdaDir = path.join(root, "WDA");
   if (fs.existsSync(wdaDir)) {
     for (const name of fs.readdirSync(wdaDir).filter((item) => item.toLowerCase().endsWith(".mcz"))) {
+      if (skipped.purgedExamples?.includes(name.toLowerCase())) continue;
       try { await openManagedPath(path.join(wdaDir, name), { updateLastOpened: false }); }
       catch (error) {
         startupWarning = "WDA_IMPORT_FAILED";
@@ -119,7 +122,7 @@ export async function GET(req: Request) {
     const names = fs.existsSync(dirAbs) && fs.statSync(dirAbs).isDirectory() ? fs.readdirSync(dirAbs) : [];
     const historical = Object.keys(states).filter((src) => !parseManagedSrc(src) && dirOf(src) === dir)
       .map((src) => path.posix.basename(src));
-    const mcNames = [...new Set([...listAssets(names, MC_EXTS), ...historical])];
+    const mcNames = [...new Set(historical)];
     if (mcNames.length === 0) continue;
     const charts = mcNames.map((n) => ({
       missing: !fs.existsSync(path.join(dirAbs, n)),
@@ -142,7 +145,7 @@ export async function GET(req: Request) {
       charts,
       audio: asset(audioNames),
       cover: asset(coverNames),
-      canPurge: dir.startsWith(`${IMPORTS_REL.split(path.sep).join("/")}/`),
+      canPurge: true,
       assetError: errors.length ? errors.join("；") : null,
     });
     for (const c of charts) importMcs.push(c);
@@ -176,7 +179,7 @@ export async function GET(req: Request) {
       })),
       audio: asset(audioNames),
       cover: asset(coverNames),
-      canPurge: false,
+      canPurge: true,
       assetError: errors.length ? errors.join("；") : null,
       managed: true,
       sourceKind: project.sourceKind,
@@ -190,15 +193,10 @@ export async function GET(req: Request) {
   // 寻找活跃的 WDA 官方示例工程首张谱面作为首次打开时的默认项
   const wdaProject = registry.managedProjects.find((p) =>
     !registry.hiddenProjects.includes(p.id) && p.sourcePath && isProtectedWda(p.sourcePath)
-  ) ?? registry.managedProjects.find((p) =>
-    p.sourcePath && isProtectedWda(p.sourcePath)
   );
-  if (wdaProject && registry.hiddenProjects.includes(wdaProject.id)) {
-    registry.hiddenProjects = registry.hiddenProjects.filter((id) => id !== wdaProject.id);
-  }
-  const wdaDefaultSrc = wdaProject && wdaProject.charts.length > 0
-    ? managedSrc(wdaProject.id, wdaProject.charts[0].id)
-    : "";
+  const visibleDefault = wdaProject?.charts.find((chart) =>
+    !registry.hiddenCharts.includes(managedSrc(wdaProject.id, chart.id)));
+  const wdaDefaultSrc = wdaProject && visibleDefault ? managedSrc(wdaProject.id, visibleDefault.id) : "";
 
   const defaultSrc = wdaDefaultSrc || (SOURCE_MC_REL && fs.existsSync(path.join(root, SOURCE_MC_REL))
     ? SOURCE_MC_REL

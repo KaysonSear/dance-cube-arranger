@@ -22,7 +22,7 @@ let cachedRoot: string | null = null;
 /** 自 cwd 向上找到包含 configs/column_geometry.json 的目录(= 仓库根)。 */
 export function findRepoRoot(start = process.cwd()): string {
   if (cachedRoot) return cachedRoot;
-  let dir = path.resolve(start);
+  let dir = path.resolve(/*turbopackIgnore: true*/ start);
   for (let i = 0; i < 8; i++) {
     if (fs.existsSync(path.join(dir, "configs", "column_geometry.json"))) {
       cachedRoot = dir;
@@ -102,8 +102,8 @@ export function discoverAssetsIn(dir: string): {
   const audio = pickAsset(names, AUDIO_EXTS);
   const cover = pickAsset(names, COVER_EXTS);
   return {
-    audioPath: audio ? path.join(dir, audio) : null,
-    coverPath: cover ? path.join(dir, cover) : null,
+    audioPath: audio ? path.join(/*turbopackIgnore: true*/ dir, audio) : null,
+    coverPath: cover ? path.join(/*turbopackIgnore: true*/ dir, cover) : null,
   };
 }
 
@@ -175,7 +175,7 @@ export function resolveSrc(req: Request): SrcResolution {
     if (containment.startsWith("..") || path.isAbsolute(containment)) {
       return { ok: false, status: 400, error: "工作区谱面路径越界" };
     }
-    if (!fs.existsSync(abs)) return { ok: false, status: 404, error: `找不到谱面: ${chart.fileName}` };
+    if (!fs.existsSync(/*turbopackIgnore: true*/ abs)) return { ok: false, status: 404, error: `找不到谱面: ${chart.fileName}` };
     return { ok: true, rel: raw, abs, dir: workspace, key: projectKey(raw), managed };
   }
   const n = normalizeSrcRel(raw);
@@ -186,7 +186,7 @@ export function resolveSrc(req: Request): SrcResolution {
   if (relCheck.startsWith("..") || path.isAbsolute(relCheck)) {
     return { ok: false, status: 400, error: "src 越界" };
   }
-  if (!fs.existsSync(abs)) return { ok: false, status: 404, error: `找不到谱面: ${n.rel}` };
+  if (!fs.existsSync(/*turbopackIgnore: true*/ abs)) return { ok: false, status: 404, error: `找不到谱面: ${n.rel}` };
   return { ok: true, rel: n.rel, abs, dir: path.dirname(abs), key: projectKey(n.rel), managed: null };
 }
 

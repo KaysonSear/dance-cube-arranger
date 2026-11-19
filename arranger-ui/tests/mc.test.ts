@@ -28,6 +28,10 @@ function miniMc(overrides?: { note?: unknown[] }): string {
 }
 
 describe("parseMc", () => {
+  it("reads the same chart from UTF-8 files with and without a BOM", () => {
+    expect(parseMc("\uFEFF" + miniMc())).toEqual(parseMc(miniMc()));
+  });
+
   it("parses gameplay/audio/time and preserves raw", () => {
     const c = parseMc(miniMc());
     expect(c.gameplay).toHaveLength(3);

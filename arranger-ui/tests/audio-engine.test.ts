@@ -126,6 +126,52 @@ describe("AudioEngine audition kick suppression", () => {
     delete (globalThis as unknown as { AudioWorkletNode?: unknown }).AudioWorkletNode;
   });
 
+  it("keeps the paused playhead and canvas updates available without an audio file", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }));
+    const engine = new AudioEngine({ onReady: vi.fn(), onPlayingChange: vi.fn() });
+    const frame = vi.fn();
+    engine.subscribe(frame);
+    try {
+      await expect(engine.load("/missing", "/kick")).rejects.toThrow("404");
+      engine.seek(5);
+      engine.shuttleToAndAudition(7);
+      expect(engine.getNavigationTime()).toBe(7);
+      const draw = vi.mocked(requestAnimationFrame).mock.calls[0][0];
+      draw(0);
+      expect(frame).toHaveBeenLastCalledWith(7);
+      expect(engine.playing).toBe(false);
+    } finally {
+      engine.dispose();
+    }
+  });
+
+  it("does not mark a disposed engine ready when an older audio request completes", async () => {
+    let complete!: (response: Response) => void;
+    const request = new Promise<Response>((resolve) => { complete = resolve; });
+    vi.mocked(fetch).mockReturnValueOnce(request);
+    const onReady = vi.fn();
+    const engine = new AudioEngine({ onReady, onPlayingChange: vi.fn() });
+    const loading = engine.load("/slow", "/kick");
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    engine.dispose();
+    complete(new Response(new ArrayBuffer(1)));
+    await loading;
+    expect(onReady).not.toHaveBeenCalled();
+    expect(engine.ready).toBe(false);
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+  });
+
+  it("limits a restored playhead to the decoded track length", async () => {
+    const engine = new AudioEngine({ onReady: vi.fn(), onPlayingChange: vi.fn() });
+    try {
+      engine.seek(30);
+      await engine.load("/test.mp3", "/kick.mp3");
+      expect(engine.getTime()).toBe(10);
+    } finally {
+      engine.dispose();
+    }
+  });
+
   it("suppresses kick drum during audition when withKick=false (e.g. Q/E navigation)", async () => {
     vi.useFakeTimers();
     try {

@@ -74,9 +74,16 @@ try {
     if ($previous -and -not $previous.WaitForExit(30000)) { throw 'Previous editor failed to exit' }
     $previousExited = $true
 
+    $registryPath = Join-Path $stateDir 'registry.json'
+    $purgedExamples = @()
+    if (Test-Path -LiteralPath $registryPath -PathType Leaf) {
+        $purgedExamples = @((Get-Content -LiteralPath $registryPath -Raw -Encoding UTF8 | ConvertFrom-Json).purgedExamples)
+    }
     foreach ($file in $files) {
         $relative = $file.FullName.Substring($source.Length + 1)
         $destination = Join-Path $root $relative
+        # Preserve user-edited bundled charts across portable upgrades.
+        if ($relative -like 'WDA\*.mcz' -and ($purgedExamples -contains $file.Name -or (Test-Path -LiteralPath $destination -PathType Leaf))) { continue }
         $saved = $null
         if (Test-Path -LiteralPath $destination -PathType Leaf) {
             $saved = Join-Path $backup $relative

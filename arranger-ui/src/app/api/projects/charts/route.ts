@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   const file = path.join(findRepoRoot(), project.workspaceRel, name.name);
   try {
     fs.writeFileSync(file, text, { encoding: "utf-8", flag: "wx" });
-    project.charts.push({ id, fileName: name.name, title: name.name.replace(/\.mc$/i, "") });
+    project.charts.push({ id, archiveEntry: null, fileName: name.name, title: name.name.replace(/\.mc$/i, "") });
     project.updatedAt = new Date().toISOString();
     const nextSrc = managedSrc(project.id, id);
     registry.lastOpenedSrc = nextSrc;

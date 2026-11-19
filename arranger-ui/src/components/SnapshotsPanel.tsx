@@ -10,11 +10,12 @@ import { srcQuery } from "@/lib/projects";
 export interface SnapshotsPanelProps {
   open: boolean;
   src: string;
+  onCreate(label: string): Promise<void>;
   onRestore(state: WorkingStateV1): void;
   onToast(msg: string): void;
 }
 
-export default function SnapshotsPanel({ open, src, onRestore, onToast }: SnapshotsPanelProps) {
+export default function SnapshotsPanel({ open, src, onCreate, onRestore, onToast }: SnapshotsPanelProps) {
   const [list, setList] = useState<SnapshotMeta[]>([]);
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,17 +41,12 @@ export default function SnapshotsPanel({ open, src, onRestore, onToast }: Snapsh
   const create = async () => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/snapshots${srcQuery(src)}`, {
-        method: "POST",
-        body: JSON.stringify({ label: label || undefined }),
-      });
-      if (res.ok) {
-        setLabel("");
-        onToast("快照已创建");
-        await refresh();
-      } else {
-        onToast(`快照失败:${(await res.json()).error ?? res.status}`);
-      }
+      await onCreate(label);
+      setLabel("");
+      onToast("快照已创建");
+      await refresh();
+    } catch (error) {
+      onToast(`快照失败：${(error as Error).message}`);
     } finally {
       setBusy(false);
     }

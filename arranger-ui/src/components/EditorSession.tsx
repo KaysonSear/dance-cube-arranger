@@ -11,7 +11,7 @@
  *   **Shift+点击键** → 把该键在播放头之前最近一次指派延伸成长条(尾落在吸附拍位)。
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffectEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { useAudioClock } from "@/hooks/useAudioClock";
 import type { KickSoundId } from "@/lib/audio-engine";
@@ -19,7 +19,6 @@ import {
   assign,
   assignAllToColumn,
   assignmentsAt,
-  assignmentsFromJson,
   assignmentsToJson,
   buildExportNotes,
   buildOnsets,
@@ -64,7 +63,6 @@ import {
 } from "@/lib/random-arranger";
 import {
   DEFAULT_UI,
-  normalizeUiPrefs,
   type UiPrefs,
   type WorkingStateV1,
 } from "@/lib/persist-types";
@@ -83,9 +81,9 @@ import {
   restoreSegmentStructure,
   applyClipRoles,
   clearClipSemanticsAndRelations,
-  type PersistedSegmentStructure,
   type SuggestedSection,
   type SegmentStructureV3,
+  type PersistedSegmentStructure,
 } from "@/lib/segments";
 import { nearestOnsetByTime, nextOnsetByTime, onsetAtOrBefore } from "@/lib/timeline";
 import { resolveWriteBack } from "@/lib/writeback";
@@ -97,7 +95,10 @@ import {
   type TimingContext,
 } from "@/lib/timemap";
 import { UndoStack } from "@/lib/undo";
-import { deleteOnsetFromSnapshot, nextSnapshot, type EditorSnapshot } from "@/lib/editor-state";
+import {
+  deleteOnsetFromSnapshot, deleteShortcut, editorTiming, nextSnapshot,
+  restoreWorkingState, type EditorSnapshot,
+} from "@/lib/editor-state";
 import {
   loadStoredSimulatorKeymap,
   navigateSimulatorGesture,
@@ -212,8 +213,8 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
   const [helpOpen, setHelpOpen] = useState(false);
   const [assetRevision, setAssetRevision] = useState(0);
   const [manageRevision, setManageRevision] = useState(0);
-  const [undoTick, setUndoTick] = useState(0); // 仅驱动按钮禁用态刷新
-  const [structureUndoTick, setStructureUndoTick] = useState(0);
+  const [[canUndo, canRedo], setArrangementHistory] = useState([false, false]);
+  const [[canUndoStructure, canRedoStructure], setStructureHistory] = useState([false, false]);
   const [simulatorGesture, setSimulatorGesture] = useState<SimulatorGesture | null>(null);
   const [simulatorNowMs, setSimulatorNowMs] = useState(0);
   const [lastSimulatorColumns, setLastSimulatorColumns] = useState<Column[]>([]);
@@ -223,7 +224,6 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
 
   const rootRef = useRef<HTMLDivElement | null>(null); // 可聚焦编辑器根:点击后收回焦点,保 Q/E 生效
   const simulatorKeymapRef = useRef(simulatorKeymap);
-  simulatorKeymapRef.current = simulatorKeymap;
   const simulatorTextCaptureRef = useRef<HTMLInputElement | null>(null);
   const lastSimulatorTextRef = useRef<{ column: Column; atMs: number } | null>(null);
   const simulatorFocusFrameRef = useRef<number | null>(null);
@@ -239,18 +239,11 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
   const sourceIds = useMemo(() => new Set(sourceOnsets.map((o) => o.id)), [sourceOnsets]);
   const onsetsById = useMemo(() => new Map(onsets.map((o) => [o.id, o])), [onsets]);
   // 手动 BPM/offset 修正:null = 用源值。多 BPM 谱面只覆盖首段(UI 有标注)。
-  const timing: TimingContext | null = useMemo(() => {
-    if (!chart) return null;
-    const timeMap =
-      ui.bpmOverride != null && chart.timeMap.length > 0
-        ? [{ ...chart.timeMap[0], bpm: ui.bpmOverride }, ...chart.timeMap.slice(1)]
-        : chart.timeMap;
-    return {
-      timeMap,
-      offsetMs: ui.offsetOverride ?? chart.audioNote.offsetMs,
-      nudgeMs: ui.nudgeMs,
-    };
-  }, [chart, ui.nudgeMs, ui.bpmOverride, ui.offsetOverride]);
+  const { nudgeMs, bpmOverride, offsetOverride } = ui;
+  const timing: TimingContext | null = useMemo(
+    () => chart ? editorTiming(chart, { nudgeMs, bpmOverride, offsetOverride }) : null,
+    [chart, nudgeMs, bpmOverride, offsetOverride],
+  );
   const effectiveMetadata = useMemo<ChartMetadataInput | null>(() => {
     if (!chart || !timing) return null;
     const base = metadataFromChart(chart);
@@ -319,25 +312,15 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
   const undoRef = useRef<UndoStack<EditorSnapshot> | null>(null);
   const structureUndoRef = useRef<UndoStack<SegmentStructureV3> | null>(null);
   const assignmentsRef = useRef(assignments);
-  assignmentsRef.current = assignments;
   const uiRef = useRef(ui);
-  uiRef.current = ui;
   const timingRef = useRef(timing);
-  timingRef.current = timing;
   const onsetsRef = useRef(onsets);
-  onsetsRef.current = onsets;
   const timedOnsetsRef = useRef(timedOnsets);
-  timedOnsetsRef.current = timedOnsets;
   const addedOnsetsRef = useRef(addedOnsets);
-  addedOnsetsRef.current = addedOnsets;
   const deletedOnsetIdsRef = useRef(deletedOnsetIds);
-  deletedOnsetIdsRef.current = deletedOnsetIds;
   const structureRef = useRef(structure);
-  structureRef.current = structure;
   const pendingInSecRef = useRef(pendingInSec);
-  pendingInSecRef.current = pendingInSec;
   const selectedSegmentIdsRef = useRef(selectedSegmentIds);
-  selectedSegmentIdsRef.current = selectedSegmentIds;
   const clipCounterRef = useRef(1);
   const relationCounterRef = useRef(1);
   const setInPointRef = useRef<() => void>(() => {});
@@ -347,13 +330,9 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
   const onStructureChangeRef = useRef<(next: SegmentStructureV3) => void>(() => {});
   const pendingStructureRef = useRef<PersistedSegmentStructure | null>(null);
   const sourceIdsRef = useRef(sourceIds);
-  sourceIdsRef.current = sourceIds;
   const selectedRef = useRef(selectedId);
-  selectedRef.current = selectedId;
   const phaseRef = useRef(phase);
-  phaseRef.current = phase;
   const markedSwapOnsetIdRef = useRef(markedSwapOnsetId);
-  markedSwapOnsetIdRef.current = markedSwapOnsetId;
 
   const focusSimulatorCapture = useCallback(() => {
     if (
@@ -399,15 +378,16 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     });
   }, [focusSimulatorCapture]);
   const sourceModeRef = useRef(sourceMode);
-  sourceModeRef.current = sourceMode;
   const chartRef = useRef(chart);
-  chartRef.current = chart;
   const sourceInfoRef = useRef(sourceInfo);
-  sourceInfoRef.current = sourceInfo;
   const simulatorGestureRef = useRef(simulatorGesture);
-  simulatorGestureRef.current = simulatorGesture;
   const simulatorTimersRef = useRef<number[]>([]);
-  const snapDirtyRef = useRef(false);
+  const snapshotRevisionRef = useRef(0);
+  const savedSnapshotRevisionRef = useRef(0);
+  const saveQueueRef = useRef(Promise.resolve(true));
+  const saveShortcutRef = useRef<() => void>(() => {});
+  const leavingRef = useRef(false);
+  const [leaving, setLeaving] = useState(false);
   /** 本会话是否发生过真实编辑 —— 只打开不修改的工程绝不触碰源文件 */
   const editedRef = useRef(false);
   /** 最近一次成功写回的内容 —— 纯 UI 变化(滚动/音量)不应重复写文件 */
@@ -415,7 +395,6 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
   /** 写回遇到结构性错误(403/409/422)后停手,避免反复失败 */
   const writeBackOffRef = useRef(false);
   const firstDirtyAt = useRef<number | null>(null);
-  const pendingSeekRef = useRef<number | null>(null);
   const hintTimer = useRef<number | null>(null);
 
   const toast = useCallback((msg: string) => {
@@ -445,6 +424,28 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     [clearSimulatorTimers, publishSimulatorGesture, toast],
   );
 
+  function hydrate(parsed: ParsedChart, saved: WorkingStateV1) {
+    const duration = clock.duration();
+    const restored = restoreWorkingState(parsed, saved, duration);
+    setAddedOnsets(restored.snapshot.addedOnsets);
+    setDeletedOnsetIds(restored.snapshot.deletedOnsetIds);
+    structureRef.current = restored.structure;
+    setStructure(restored.structure);
+    structureUndoRef.current = new UndoStack(restored.structure);
+    pendingStructureRef.current = duration > 0 ? null : (saved.structure?.schema === 1 ? saved.structure : restored.structure);
+    setPendingInSec(null);
+    setSelectedSegmentIds(new Set());
+    setSourceMode(saved.sourceMode);
+    setAssignments(restored.snapshot.assignments);
+    undoRef.current = new UndoStack<EditorSnapshot>(restored.snapshot);
+    setUi(restored.ui);
+    setSelectedId(restored.ui.selectedOnsetId);
+    clock.seek(restored.ui.playheadSec);
+  }
+
+  const hydrateLoaded = useEffectEvent(hydrate);
+
+  // ── 初始加载:geometry + chart + state 并行(chart/state 按工程 ?src) ──
   useEffect(() => {
     const attempt = new AbortController();
     const signal = attempt.signal;
@@ -474,7 +475,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
         setSourceInfo({ path: source.path, sha1: source.sourceSha1 });
         setSavedState(saved);
         if (saved && saved.sourceSha1 === source.sourceSha1) {
-          hydrate(source.parsed, saved);
+          hydrateLoaded(source.parsed, saved);
           setPhase("ready");
         } else if (!saved && source.parsed.gameplay.length === 0) {
           setSourceMode("real");
@@ -506,30 +507,6 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     return () => attempt.abort();
   }, [q, loadAttempt]);
 
-  function hydrate(parsed: ParsedChart, saved: WorkingStateV1) {
-    // 顺序关键:必须先把新增采音点并入并剔除被删除采音点,否则其上的指派会被当作"未知 onsetId"净化丢弃
-    const added = saved.addedOnsets ?? [];
-    const deleted = saved.deletedOnsetIds ?? [];
-    const deletedSet = new Set(deleted);
-    const os = mergeOnsets(buildOnsets(parsed.gameplay), added).filter((o) => !deletedSet.has(o.id));
-    setAddedOnsets(added);
-    setDeletedOnsetIds(deleted);
-    pendingStructureRef.current = saved.structure ?? null;
-    structureRef.current = EMPTY_SEGMENT_STRUCTURE;
-    setStructure(EMPTY_SEGMENT_STRUCTURE);
-    structureUndoRef.current = new UndoStack(EMPTY_SEGMENT_STRUCTURE);
-    setPendingInSec(null);
-    setSelectedSegmentIds(new Set());
-    const map = assignmentsFromJson(saved.assignments, os);
-    setSourceMode(saved.sourceMode);
-    setAssignments(map);
-    undoRef.current = new UndoStack<EditorSnapshot>({ assignments: map, addedOnsets: added, deletedOnsetIds: deleted });
-    const mergedUi = normalizeUiPrefs(saved.ui);
-    setUi(mergedUi);
-    setSelectedId(mergedUi.selectedOnsetId);
-    pendingSeekRef.current = mergedUi.playheadSec || 0;
-  }
-
   const startFresh = useCallback((placeholder: boolean) => {
     const mode: SourceMode = placeholder ? "placeholder" : "real";
     setAddedOnsets([]); // 重新播种 → 一并清掉此前新增与删除的采音点
@@ -548,13 +525,13 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     setPhase("ready");
   }, []);
 
-  const resumeSaved = useCallback(() => {
+  function resumeSaved() {
     const parsed = chartRef.current;
     if (parsed && savedState) {
       hydrate(parsed, savedState);
       setPhase("ready");
     }
-  }, [savedState]);
+  }
 
   // ── 编辑核心 ──
   const applyEdit = useCallback(
@@ -575,12 +552,12 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       // 无变化的编辑不入栈:否则撤销会撞上 React 的 Object.is 空转,那一次 Z 看似失灵
       if (!step.changed) return true;
       undoRef.current?.push(step.snapshot);
-      snapDirtyRef.current = true;
+      snapshotRevisionRef.current += 1;
       editedRef.current = true;
       setAssignments(step.snapshot.assignments);
       setAddedOnsets(step.snapshot.addedOnsets);
       setDeletedOnsetIds(step.snapshot.deletedOnsetIds ?? []);
-      setUndoTick((n) => n + 1);
+      setArrangementHistory([undoRef.current?.canUndo ?? false, undoRef.current?.canRedo ?? false]);
       return true;
     },
     [toast],
@@ -638,12 +615,12 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     }
 
     undoRef.current?.push(next.snapshot);
-    snapDirtyRef.current = true;
+    snapshotRevisionRef.current += 1;
     editedRef.current = true;
     setAssignments(next.snapshot.assignments);
     setAddedOnsets(next.snapshot.addedOnsets);
     setDeletedOnsetIds(next.snapshot.deletedOnsetIds ?? []);
-    setUndoTick((n) => n + 1);
+    setArrangementHistory([undoRef.current?.canUndo ?? false, undoRef.current?.canRedo ?? false]);
 
     if (markedSwapOnsetIdRef.current === targetId) {
       markedSwapOnsetIdRef.current = null;
@@ -810,7 +787,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     }
   }, [applyEdit, cancelSimulatorGesture, clock, exactOnsetAtPlayhead, toast]);
 
-  copyHandlerRef.current = (event: ClipboardEvent) => {
+  const copyHandler = (event: ClipboardEvent) => {
     if (
       phaseRef.current !== "ready" ||
       clipboardTargetIsTextInput(event.target, simulatorTextCaptureRef.current)
@@ -878,7 +855,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     }
   };
 
-  pasteHandlerRef.current = (event: ClipboardEvent) => {
+  const pasteHandler = (event: ClipboardEvent) => {
     if (
       phaseRef.current !== "ready" ||
       clipboardTargetIsTextInput(event.target, simulatorTextCaptureRef.current)
@@ -993,12 +970,12 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
 
   /** 撤销/重做:必须同时还原 assignments 与 addedOnsets / deletedOnsetIds(见 editor-state.ts 注释)。 */
   const restoreState = useCallback((s: EditorSnapshot) => {
-    snapDirtyRef.current = true;
+    snapshotRevisionRef.current += 1;
     editedRef.current = true;
     setAssignments(s.assignments);
     setAddedOnsets(s.addedOnsets);
     setDeletedOnsetIds(s.deletedOnsetIds ?? []);
-    setUndoTick((n) => n + 1);
+    setArrangementHistory([undoRef.current?.canUndo ?? false, undoRef.current?.canRedo ?? false]);
   }, []);
 
   const doUndo = useCallback(() => {
@@ -1309,12 +1286,13 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     };
   }, [phase, scheduleSimulatorCaptureFocus, ui.simulatorMode]);
 
-  keyHandlerRef.current = (e: KeyboardEvent) => {
+  function handleKeyDown(e: KeyboardEvent) {
+    if (leavingRef.current) return;
     // Ctrl/⌘+S 保存 —— 放在输入框守卫之前,焦点在输入框时也能存并挡浏览器保存框。
     if ((e.key === "s" || e.key === "S") && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (phaseRef.current === "ready") {
-        void persistNow(true);
+        saveShortcutRef.current();
       }
       return;
     }
@@ -1527,16 +1505,12 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     const isKeyZ = k === "z" || k === "Z" || code === "KeyZ";
     const isKeyY = k === "y" || k === "Y" || code === "KeyY";
     const isF1 = k === "F1" || code === "F1";
-    const isDelete =
-      (k === "Delete" || code === "Delete") &&
-      !e.ctrlKey &&
-      !e.altKey &&
-      !e.metaKey;
+    const deletion = deleteShortcut(e, selectedSegmentIdsRef.current.size > 0);
 
     if (isF1) {
       e.preventDefault();
       setHelpOpen((v) => !v);
-    } else if (isDelete) {
+    } else if (deletion === "delete-onset") {
       e.preventDefault();
       deleteCurrentOnset();
     } else if (isSpace) {
@@ -1570,12 +1544,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     ) {
       e.preventDefault();
       completeOutPointRef.current();
-    } else if (
-      (k === "Delete" || k === "Backspace" || code === "Delete" || code === "Backspace") &&
-      e.shiftKey &&
-      !e.altKey &&
-      selectedSegmentIdsRef.current.size > 0
-    ) {
+    } else if (deletion === "clear-clip-semantics") {
       e.preventDefault();
       const selected = [...selectedSegmentIdsRef.current];
       const nextStruct = clearClipSemanticsAndRelations(structureRef.current, selected);
@@ -1809,8 +1778,8 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
         toast("已取消标记采音点 A");
       }
     }
-  };
-  keyUpHandlerRef.current = (e: KeyboardEvent) => {
+  }
+  const keyUpHandler = (e: KeyboardEvent) => {
     const gesture = simulatorGestureRef.current;
     if (uiRef.current.simulatorMode) {
       const diagnostic = {
@@ -1901,7 +1870,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
 
   // ── 持久化(按工程 ?src) ──
   const buildStateRef = useRef<() => WorkingStateV1 | null>(() => null);
-  buildStateRef.current = () => {
+  const buildState = (): WorkingStateV1 | null => {
     if (!sourceInfo) return null;
     return {
       schema: 1,
@@ -1911,7 +1880,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       assignments: assignmentsToJson(assignmentsRef.current),
       addedOnsets: addedOnsetsRef.current,
       deletedOnsetIds: deletedOnsetIdsRef.current,
-      structure: structureRef.current,
+      structure: pendingStructureRef.current ?? structureRef.current,
       ui: {
         ...uiRef.current,
         playheadSec: clock.getTime(),
@@ -1921,25 +1890,40 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     };
   };
 
-  const persistNow = useCallback(async (syncBacking = false): Promise<boolean> => {
+  const buildMcForExport = useCallback(() => {
+    const parsed = chartRef.current;
+    if (!parsed) return null;
+    const build = buildExportNotes(onsetsRef.current, assignmentsRef.current);
+    return {
+      text: buildArrangedMc(parsed, build.notes, {
+        bpm: uiRef.current.bpmOverride,
+        offsetMs: uiRef.current.offsetOverride,
+      }),
+      noteCount: build.notes.length,
+      assignedCount: build.assignedCount,
+      unassignedCount: build.unassignedCount,
+    };
+  }, []);
+
+  const saveDraft = useCallback(async (syncBacking: boolean): Promise<boolean> => {
     const state = buildStateRef.current();
     if (!state) return false;
-    let succeeded = true;
+    state.sourceSha1 = sourceInfoRef.current?.sha1 ?? state.sourceSha1;
+    const managed = src.startsWith("managed:");
+    const writeChart = (managed || resolveWriteBack(state.ui.writeBackEnabled, src))
+      && (editedRef.current || (managed && syncBacking));
+    const built = writeChart ? buildMcForExport() : null;
 
     // ① 写回源 .mc(用户授权的"自动保存改原文件")。只在**真发生过编辑**且内容确有变化时写:
     //    防抖也会被滚动/音量等纯 UI 变化触发,没有这道闸会造成写放大。
-    if (
-      (src.startsWith("managed:") || resolveWriteBack(uiRef.current.writeBackEnabled, src)) &&
-      editedRef.current &&
-      !writeBackOffRef.current
-    ) {
-      const built = buildMcRef.current();
-      if (built && built.text !== lastWrittenRef.current) {
+    if (writeChart) {
+      if (writeBackOffRef.current || !built) return false;
+      if (built.text !== lastWrittenRef.current) {
         try {
           const res = await fetch(`/api/writeback${q}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mcText: built.text, expectSha1: sourceInfoRef.current?.sha1 }),
+            body: JSON.stringify({ mcText: built.text, expectSha1: state.sourceSha1 }),
           });
           const j = await res.json();
           if (res.ok && j.ok) {
@@ -1953,13 +1937,13 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
             setWriteBackError(null);
           } else {
             // 403/409/422 属结构性问题 → 停止重试,横幅提示(网络抖动则下次防抖再来)
-            writeBackOffRef.current = true;
-            setWriteBackError(String(j.error ?? (j.errors ?? []).join("; ") ?? `HTTP ${res.status}`));
-            succeeded = false;
+            writeBackOffRef.current = [403, 409, 422].includes(res.status);
+            setWriteBackError(String(j.error || j.errors?.join("；") || `HTTP ${res.status}`));
+            return false;
           }
-        } catch {
-          succeeded = false;
-          /* 网络抖动:保留标志,下次防抖重试 */
+        } catch (error) {
+          setWriteBackError(`谱面写回失败：${(error as Error).message}`);
+          return false;
         }
       }
     }
@@ -1967,21 +1951,23 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     // ② 工作状态
     try {
       const res = await fetch(`/api/state${q}`, { method: "POST", body: JSON.stringify(state) });
-      if (res.ok) setSaveStamp(new Date().toLocaleTimeString());
-      else succeeded = false;
-    } catch {
-      /* 网络抖动:下次编辑再存 */
-      succeeded = false;
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(String(data?.error ?? `HTTP ${res.status}`));
+      }
+      setSaveStamp(new Date().toLocaleTimeString());
+    } catch (error) {
+      toast(`工作状态保存失败：${(error as Error).message}`);
+      return false;
     }
-    if (syncBacking && src.startsWith("managed:")) {
-      const built = buildMcRef.current();
+    if (syncBacking && managed) {
       if (!built) return false;
       try {
         const saveBacking = async (overwriteAssets = false): Promise<boolean> => {
           const res = await fetch(`/api/projects/save${q}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mcText: built.text, overwriteAssets }),
+            body: JSON.stringify({ mcText: built.text, expectSha1: state.sourceSha1, overwriteAssets }),
           });
           const data = await res.json();
           if (res.status === 409 && data.conflict && Array.isArray(data.assetConflicts) && !overwriteAssets) {
@@ -2011,11 +1997,47 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
         return false;
       }
     } else if (syncBacking) {
-      toast(succeeded ? "已保存" : "保存未完成，请查看错误提示");
+      toast("已保存");
     }
-    return succeeded;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src]);
+    return true;
+  }, [q, src, toast, buildMcForExport]);
+
+  const persistNow = useCallback((syncBacking = false): Promise<boolean> => {
+    if (leavingRef.current) return Promise.resolve(false);
+    const pending = saveQueueRef.current.then(() => saveDraft(syncBacking)).catch((error) => {
+      toast(`保存失败：${(error as Error).message}`);
+      return false;
+    });
+    saveQueueRef.current = pending;
+    return pending;
+  }, [saveDraft, toast]);
+
+  const leaveSession = async (
+    nextSrc?: string,
+    beforeNavigation?: () => Promise<boolean>,
+    purge = false,
+  ) => {
+    if (leavingRef.current) return;
+    const save = purge || phaseRef.current !== "ready" ? saveQueueRef.current : persistNow();
+    leavingRef.current = true;
+    setLeaving(true);
+    let navigated = false;
+    try {
+      if (!(await save) && !purge) {
+        toast("工程尚未保存，已保留当前编辑。");
+        return;
+      }
+      if (beforeNavigation && !(await beforeNavigation())) return;
+      if (nextSrc) onOpenSrc(nextSrc);
+      else onExit();
+      navigated = true;
+    } finally {
+      if (!navigated) {
+        leavingRef.current = false;
+        setLeaving(false);
+      }
+    }
+  };
 
   useEffect(() => {
     if (phase !== "ready") return;
@@ -2037,12 +2059,12 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       void persistNow();
     }, delay);
     return () => window.clearTimeout(timer);
-  }, [assignments, addedOnsets, structure, ui, sourceMode, phase, persistNow]);
+  }, [assignments, addedOnsets, deletedOnsetIds, structure, ui, sourceMode, phase, persistNow]);
 
   // pagehide → sendBeacon 兜底
   useEffect(() => {
     const h = () => {
-      if (phaseRef.current !== "ready") return;
+      if (phaseRef.current !== "ready" || leavingRef.current || writeBackOffRef.current) return;
       const state = buildStateRef.current();
       if (state) {
         navigator.sendBeacon(
@@ -2056,70 +2078,60 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 每 5 分钟:有改动则自动快照(用已保存状态)
+  const createSnapshot = useCallback(async (label: string) => {
+    const state = buildStateRef.current();
+    if (!state) throw new Error("工程尚未载入");
+    const revision = snapshotRevisionRef.current;
+    const res = await fetch(`/api/snapshots${q}`, {
+      method: "POST",
+      body: JSON.stringify({ label, state }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(String(data?.error ?? `HTTP ${res.status}`));
+    }
+    savedSnapshotRevisionRef.current = Math.max(savedSnapshotRevisionRef.current, revision);
+  }, [q]);
+
+  // Capture the current edit even if its debounced workspace save is still pending.
   useEffect(() => {
     if (phase !== "ready") return;
     const iv = window.setInterval(() => {
-      if (snapDirtyRef.current) {
-        snapDirtyRef.current = false;
-        void fetch(`/api/snapshots${q}`, {
-          method: "POST",
-          body: JSON.stringify({ label: "自动快照" }),
-        });
+      if (!leavingRef.current && snapshotRevisionRef.current !== savedSnapshotRevisionRef.current) {
+        void createSnapshot("自动快照").catch((error) => toast(`自动快照失败：${(error as Error).message}`));
       }
     }, 5 * 60_000);
     return () => window.clearInterval(iv);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  }, [phase, createSnapshot, toast]);
 
   const restoreSnapshot = useCallback(
     (state: WorkingStateV1) => {
       cancelSimulatorGesture();
       setLastSimulatorColumns([]);
-      const added = state.addedOnsets ?? [];
-      const deleted = state.deletedOnsetIds ?? [];
-      const deletedSet = new Set(deleted);
-      const os = mergeOnsets(buildOnsets(chartRef.current!.gameplay), added).filter((o) => !deletedSet.has(o.id));
-      setAddedOnsets(added);
-      setDeletedOnsetIds(deleted);
-      onStructureChangeRef.current(
-        restoreSegmentStructure(state.structure, clock.duration(), timedOnsetsRef.current),
-      );
+      const duration = clock.duration();
+      const restored = restoreWorkingState(chartRef.current!, state, duration);
+      setAddedOnsets(restored.snapshot.addedOnsets);
+      setDeletedOnsetIds(restored.snapshot.deletedOnsetIds);
+      onStructureChangeRef.current(restored.structure);
+      pendingStructureRef.current = duration > 0 ? null : (state.structure?.schema === 1 ? state.structure : restored.structure);
       setPendingInSec(null);
-      const map = assignmentsFromJson(state.assignments, os);
-      undoRef.current?.push({ assignments: map, addedOnsets: added, deletedOnsetIds: deleted }); // 恢复本身可回退
-      snapDirtyRef.current = true;
+      undoRef.current?.push(restored.snapshot);
+      snapshotRevisionRef.current += 1;
+      editedRef.current = true;
       setSourceMode(state.sourceMode);
-      setAssignments(map);
-      const restoredUi = normalizeUiPrefs(state.ui);
-      setUi(restoredUi);
-      setSelectedId(restoredUi.selectedOnsetId);
-      clock.seek(restoredUi.playheadSec);
-      setUndoTick((n) => n + 1);
+      setAssignments(restored.snapshot.assignments);
+      setUi(restored.ui);
+      setSelectedId(restored.ui.selectedOnsetId);
+      clock.seek(restored.ui.playheadSec);
+      setArrangementHistory([undoRef.current?.canUndo ?? false, undoRef.current?.canRedo ?? false]);
       toast("已恢复快照；排键与分割可分别回退");
     },
     [cancelSimulatorGesture, clock, toast],
   );
 
-  /** 写回在 persistNow 里先于 buildMcForExport 定义,故经 ref 调用 */
-  const buildMcRef = useRef<() => { text: string } | null>(() => null);
 
-  const buildMcForExport = useCallback(() => {
-    const parsed = chartRef.current;
-    if (!parsed) return null;
-    const build = buildExportNotes(onsetsRef.current, assignmentsRef.current);
-    return {
-      text: buildArrangedMc(parsed, build.notes, {
-        bpm: uiRef.current.bpmOverride,
-        offsetMs: uiRef.current.offsetOverride,
-      }),
-      noteCount: build.notes.length,
-      assignedCount: build.assignedCount,
-      unassignedCount: build.unassignedCount,
-    };
-  }, []);
 
-  buildMcRef.current = buildMcForExport;
+
 
   const onViewPersist = useCallback((view: TimelineView) => {
     setUi((prev) =>
@@ -2131,8 +2143,9 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
 
   const restoreStructureState = useCallback(
     (next: SegmentStructureV3) => {
+      pendingStructureRef.current = null;
       structureRef.current = next;
-      snapDirtyRef.current = true;
+      snapshotRevisionRef.current += 1;
       setStructure(next);
       const valid = new Set(deriveSegments(next).map((segment) => segment.id));
       setSelectedSegmentIds((previous) => {
@@ -2150,11 +2163,11 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       }
       structureUndoRef.current.push(next);
       restoreStructureState(next);
-      setStructureUndoTick((n) => n + 1);
+      setStructureHistory([structureUndoRef.current?.canUndo ?? false, structureUndoRef.current?.canRedo ?? false]);
     },
     [restoreStructureState],
   );
-  onStructureChangeRef.current = onStructureChange;
+
   const doStructureUndo = useCallback(() => {
     const previous = structureUndoRef.current?.undo();
     if (!previous) {
@@ -2163,7 +2176,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     }
     restoreStructureState(previous);
     setPendingInSec(null);
-    setStructureUndoTick((n) => n + 1);
+    setStructureHistory([structureUndoRef.current?.canUndo ?? false, structureUndoRef.current?.canRedo ?? false]);
   }, [restoreStructureState, toast]);
   const doStructureRedo = useCallback(() => {
     const next = structureUndoRef.current?.redo();
@@ -2173,14 +2186,14 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     }
     restoreStructureState(next);
     setPendingInSec(null);
-    setStructureUndoTick((n) => n + 1);
+    setStructureHistory([structureUndoRef.current?.canUndo ?? false, structureUndoRef.current?.canRedo ?? false]);
   }, [restoreStructureState, toast]);
   const setInPoint = useCallback(() => {
     const sec = Math.min(audioDuration, Math.max(0, clock.getTime()));
     setPendingInSec(sec);
     toast(`I 已设为 ${sec.toFixed(3)}s`);
   }, [audioDuration, clock, toast]);
-  setInPointRef.current = setInPoint;
+
   const completeOutPoint = useCallback(() => {
     const startSec = pendingInSecRef.current;
     if (startSec == null) {
@@ -2208,7 +2221,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     setPendingInSec(null);
     toast(`已创建并选中 I ${startSec.toFixed(3)}s → O ${endSec.toFixed(3)}s`);
   }, [audioDuration, clock, toast]);
-  completeOutPointRef.current = completeOutPoint;
+
 
   const buildSuggestedStructure = useCallback((): SegmentStructureV3 | null => {
     if (!timing || audioDuration <= 0) return null;
@@ -2289,8 +2302,6 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     });
   }, []);
 
-  // 引擎就绪且工程已 hydrate → 恢复保存的播放头(仅一次)。速度/音量由下方 per-value 副作用负责。
-  const restoredRef = useRef(false);
   const openedRecordedRef = useRef(false);
   useEffect(() => {
     if (phase !== "ready" || openedRecordedRef.current) return;
@@ -2301,16 +2312,6 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
       body: JSON.stringify({ scope: "chart", target: src, action: "touch" }),
     });
   }, [phase, src]);
-
-  useEffect(() => {
-    if (restoredRef.current || !clock.ready || phase !== "ready") return;
-    restoredRef.current = true;
-    clock.setKickEnabled(true);
-    if (pendingSeekRef.current !== null) {
-      clock.seek(pendingSeekRef.current);
-      pendingSeekRef.current = null;
-    }
-  }, [clock, phase]);
 
   // 速度/音量随 UiPrefs 变化即时下发(引擎方法幂等;ready 翻转时 clock 身份变化亦触发)。
   useEffect(() => {
@@ -2329,23 +2330,17 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     if (clock.ready) clock.setKickSound(ui.kickSound as KickSoundId);
   }, [clock, ui.kickSound]);
 
-  // 音频时长就绪后恢复手工结构；旧自动播种结构清空，建议改由用户手动载入。
+  // 已恢复的 clip 可立即编辑、保存；仅在解码得到更短的时长时修正其终点。
   useEffect(() => {
-    if (!clock.ready || phase !== "ready" || !timing || audioDuration <= 0) return;
-    if (pendingStructureRef.current) {
-      const migrated = restoreSegmentStructure(
-        pendingStructureRef.current,
-        audioDuration,
-        timedOnsets,
-      );
-      pendingStructureRef.current = null;
-      structureRef.current = migrated;
-      setStructure(migrated);
-      structureUndoRef.current = new UndoStack(migrated);
-      setStructureUndoTick((n) => n + 1);
-      snapDirtyRef.current = true;
-    }
-  }, [audioDuration, clock.ready, phase, timedOnsets, timing]);
+    if (phase !== "ready" || audioDuration <= 0) return;
+    const pending = pendingStructureRef.current;
+    pendingStructureRef.current = null;
+    if (!pending || (pending.schema !== 1 && !pending.clips.some((clip) => clip.endSec > audioDuration))) return;
+    const bounded = restoreSegmentStructure(pending, audioDuration, timedOnsets);
+    structureRef.current = bounded;
+    setStructure(bounded);
+    structureUndoRef.current?.replaceCurrent(bounded);
+  }, [audioDuration, phase, timedOnsets]);
 
   // kick 调度用的采音点音频时刻(nudge/onsets 变化时重算)。
   useEffect(() => {
@@ -2366,6 +2361,37 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
   }, [clock]);
 
   // ── 渲染 ──
+  useLayoutEffect(() => {
+    simulatorKeymapRef.current = simulatorKeymap;
+    saveShortcutRef.current = () => { void persistNow(true); };
+    assignmentsRef.current = assignments;
+    uiRef.current = ui;
+    timingRef.current = timing;
+    onsetsRef.current = onsets;
+    timedOnsetsRef.current = timedOnsets;
+    addedOnsetsRef.current = addedOnsets;
+    deletedOnsetIdsRef.current = deletedOnsetIds;
+    structureRef.current = structure;
+    pendingInSecRef.current = pendingInSec;
+    selectedSegmentIdsRef.current = selectedSegmentIds;
+    sourceIdsRef.current = sourceIds;
+    selectedRef.current = selectedId;
+    phaseRef.current = phase;
+    markedSwapOnsetIdRef.current = markedSwapOnsetId;
+    sourceModeRef.current = sourceMode;
+    chartRef.current = chart;
+    sourceInfoRef.current = sourceInfo;
+    simulatorGestureRef.current = simulatorGesture;
+    copyHandlerRef.current = copyHandler;
+    pasteHandlerRef.current = pasteHandler;
+    keyHandlerRef.current = handleKeyDown;
+    keyUpHandlerRef.current = keyUpHandler;
+    buildStateRef.current = buildState;
+    onStructureChangeRef.current = onStructureChange;
+    setInPointRef.current = setInPoint;
+    completeOutPointRef.current = completeOutPoint;
+  });
+
   if (phase === "loading") {
     return (
       <Center>
@@ -2392,11 +2418,6 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
     );
   }
 
-  const canUndo = (undoRef.current?.canUndo ?? false) && undoTick >= 0;
-  const canRedo = undoRef.current?.canRedo ?? false;
-  const canUndoStructure =
-    (structureUndoRef.current?.canUndo ?? false) && structureUndoTick >= 0;
-  const canRedoStructure = structureUndoRef.current?.canRedo ?? false;
   const simulatorPressedColumns = simulatorGesture
     ? simulatorGesture.lanes.filter((lane) => lane.down).map((lane) => lane.column)
     : [];
@@ -2424,6 +2445,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
   return (
     <div
       ref={rootRef}
+      inert={leaving}
       tabIndex={-1}
       onPointerDownCapture={() => {
         if (!uiRef.current.simulatorMode) {
@@ -2544,7 +2566,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
             scheduleSimulatorCaptureFocus();
           }
         }}
-        onExit={onExit}
+        onExit={() => void leaveSession()}
       />
 
       {chart.warnings.length > 0 && (
@@ -2596,11 +2618,8 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
             onSetup={() => setSetupOpen(true)}
             onAddChart={() => setAddChartOpen(true)}
             buildMcText={buildMcForExport}
-            onOpen={async (s) => {
-              await persistNow();
-              onOpenSrc(s);
-            }}
-            onExit={onExit}
+            onOpen={(s) => void leaveSession(s)}
+            onRemoveCurrent={leaveSession}
             onToast={toast}
           />
           <SegmentsPanel
@@ -2659,7 +2678,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
               toast("已取消标记采音点 A");
             }}
           />
-          <SnapshotsPanel open={snapsOpen} src={src} onRestore={restoreSnapshot} onToast={toast} />
+          <SnapshotsPanel open={snapsOpen} src={src} onCreate={createSnapshot} onRestore={restoreSnapshot} onToast={toast} />
         </aside>
       </div>
 
@@ -2767,7 +2786,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
         src={src}
         onClose={() => setManageOpen(false)}
         onChanged={() => setManageRevision((revision) => revision + 1)}
-        onSave={() => persistNow(true)}
+        onSave={persistNow}
         onToast={toast}
       />
 
@@ -2775,7 +2794,7 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
         open={setupOpen}
         src={src}
         metadata={effectiveMetadata!}
-        mcText={buildMcForExport()?.text ?? ""}
+        mcText={buildArrangedMc(chart, buildExportNotes(onsets, assignments).notes, { bpm: ui.bpmOverride, offsetMs: ui.offsetOverride })}
         expectSha1={sourceInfo?.sha1 ?? ""}
         onClose={() => setSetupOpen(false)}
         onApplied={(result) => {
@@ -2800,11 +2819,10 @@ export default function EditorSession({ src, onExit, onOpenSrc }: EditorSessionP
         src={src}
         defaults={newChartMetadata}
         onClose={() => setAddChartOpen(false)}
-        onCreated={async (nextSrc) => {
-          await persistNow();
+        onCreated={(nextSrc) => void leaveSession(nextSrc, async () => {
           sessionStorage.setItem("arranger:pending-toast", "已新增包内空白谱面");
-          onOpenSrc(nextSrc);
-        }}
+          return true;
+        })}
         onToast={() => undefined}
       />}
 

@@ -87,6 +87,9 @@ const importState = globalThis as typeof globalThis & {
 };
 const pendingImports = importState.__arrangerManagedImports ??= new Map<string, Promise<OpenPathResult>>();
 
+const mutationState = globalThis as typeof globalThis & { __arrangerProjectWrites?: Set<string> };
+export const activeProjectWrites = mutationState.__arrangerProjectWrites ??= new Set<string>();
+
 function chartRecords(names: string[]): ManagedChartRecord[] {
   return names.map((fileName, index) => ({
     id: stableId(`${index}\0${fileName}`, 12),
@@ -135,6 +138,16 @@ export function isProtectedWda(source: string): boolean {
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
+export function nextManagedCopy(name: string): string {
+  const dir = path.join(findRepoRoot(), "artifacts", "arranger", "managed");
+  fs.mkdirSync(dir, { recursive: true });
+  const ext = path.extname(name);
+  const stem = path.basename(name, ext);
+  let target = path.join(dir, name);
+  for (let index = 2; fs.existsSync(target); index++) target = path.join(dir, `${stem}-${index}${ext}`);
+  return target;
+}
+
 function copySiblingAssets(source: string, workspace: string): void {
   const sourceDir = path.dirname(source);
   for (const name of fs.readdirSync(sourceDir)) {
@@ -163,7 +176,7 @@ export async function openManagedPath(
 ): Promise<OpenPathResult> {
   const normalized = normalizeAbsolutePath(rawPath);
   if (!normalized.ok) throw new Error(normalized.error);
-  if (!fs.existsSync(normalized.path) || !fs.statSync(normalized.path).isFile()) {
+  if (!fs.existsSync(/*turbopackIgnore: true*/ normalized.path) || !fs.statSync(/*turbopackIgnore: true*/ normalized.path).isFile()) {
     throw new Error(`文件不存在: ${normalized.path}`);
   }
   const ext = path.extname(normalized.path).toLowerCase();
@@ -194,6 +207,9 @@ export async function openManagedPath(
     // A background scan must not overwrite navigation requested by a concurrent caller.
     if (options.updateLastOpened !== false) {
       latest.lastOpenedSrc = result.src;
+      if (isProtectedWda(source) && latest.purgedExamples) {
+        latest.purgedExamples = latest.purgedExamples.filter((name) => name !== path.basename(source).toLowerCase());
+      }
       saveRegistry(latest);
     }
     return result;
@@ -247,7 +263,7 @@ async function importManagedSource(
       sourceKind: ext.slice(1) as "mc" | "mcz",
       sourcePath: source,
       sourceFingerprint: fingerprintFile(source),
-      sourceAssets: ext === ".mc" ? siblingAssetRecords(source) : undefined,
+      sourceAssets: ext === ".mc" && options.copySiblingAssets !== false ? siblingAssetRecords(source) : undefined,
       charts: chartRecords(names),
       createdAt: now,
       updatedAt: now,
@@ -289,6 +305,9 @@ export function registerWorkspaceProject(
 ): OpenPathResult {
   const registry = readRegistry();
   const normalizedRel = workspaceRel.split(path.sep).join("/");
+  if (options.updateLastOpened !== false && registry.purgedImportDirs) {
+    registry.purgedImportDirs = registry.purgedImportDirs.filter((dir) => dir !== path.basename(normalizedRel).toLowerCase());
+  }
   const existing = registry.managedProjects.find((project) => project.workspaceRel === normalizedRel);
   if (existing) {
     const src = managedSrc(existing.id, existing.charts[0].id);

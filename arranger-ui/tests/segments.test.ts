@@ -210,6 +210,14 @@ describe("saved structure restore", () => {
     const manual = structure([clip("manual", 0, 20)]);
     expect(restoreSegmentStructure(manual, 100, points).clips).toEqual(manual.clips);
   });
+
+  it("migrates manual boundaries once the audio duration is known", () => {
+    const restored = restoreSegmentStructure({
+      schema: 1, source: "manual", boundaries: [{ id: "cut", atSec: 5 }],
+      labels: ["Intro", "Verse"], relations: [],
+    }, 20, points);
+    expect(restored.clips).toEqual([clip("segment-cut", 5, 20, "Verse")]);
+  });
 });
 
 describe("segment semantic relations", () => {

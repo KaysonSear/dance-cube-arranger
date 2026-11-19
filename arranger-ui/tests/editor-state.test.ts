@@ -4,17 +4,75 @@ import { assign, clearOnsets, move, type AssignmentsMap, type Onset } from "../s
 import type { Beat } from "../src/lib/beat";
 import {
   deleteOnsetFromSnapshot,
+  deleteShortcut,
   gcAddedOnsets,
   nextSnapshot,
+  restoreWorkingState,
   sameBeats,
   sameStrings,
 } from "../src/lib/editor-state";
+import { parseMc } from "../src/lib/mc";
+import { DEFAULT_UI, type WorkingStateV1 } from "../src/lib/persist-types";
 
 const onsetAt = (beat: Beat, id: string): Onset => ({
   id,
   beat,
   beatFloat: beat[0] + beat[1] / beat[2],
   source: [],
+});
+
+describe("Delete shortcuts", () => {
+  const del = { key: "Delete", code: "Delete", ctrlKey: false, metaKey: false, altKey: false, shiftKey: false };
+
+  it("reserves plain Delete for an onset, even when clips are selected", () => {
+    expect(deleteShortcut(del, false)).toBe("delete-onset");
+    expect(deleteShortcut(del, true)).toBe("delete-onset");
+  });
+
+  it.each(["Delete", "Backspace"])("Shift+%s acts only on selected clips", (key) => {
+    const event = { ...del, key, code: key, shiftKey: true };
+    expect(deleteShortcut(event, true)).toBe("clear-clip-semantics");
+    expect(deleteShortcut(event, false)).toBeNull();
+    expect(deleteShortcut({ ...event, ctrlKey: true }, true)).toBeNull();
+  });
+});
+
+describe("working state restoration", () => {
+  const chart = parseMc(JSON.stringify({
+    time: [{ beat: [0, 0, 1], bpm: 120 }],
+    note: [{ beat: [30, 0, 1], column: 0 }, { type: 1, sound: "song.ogg", offset: 0 }],
+  }));
+  const clip = { id: "clip-a", startSec: 2.6, endSec: 3, label: "A" };
+  const state: WorkingStateV1 = {
+    schema: 1,
+    sourcePath: "chart.mc",
+    sourceSha1: "hash",
+    sourceMode: "real",
+    assignments: { "4": [{ column: 2 }], "30": [{ column: 0 }] },
+    addedOnsets: [[4, 0, 1]],
+    deletedOnsetIds: ["30"],
+    structure: {
+      schema: 3,
+      source: "manual",
+      clips: [clip],
+      relations: [],
+    },
+    ui: { ...DEFAULT_UI, bpmOverride: 60, offsetOverride: 1500, nudgeMs: 250, playheadSec: 2.75 },
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  it.each([0, 10])("restores clip, playhead and notes when audio duration is %s", (duration) => {
+    const restored = restoreWorkingState(chart, state, duration);
+    expect(restored.structure.clips).toEqual([clip]);
+    expect(restored.ui.playheadSec).toBe(2.75);
+    expect(restored.snapshot.assignments).toEqual({ "4": [{ column: 2, endbeat: null }] });
+    expect(restored.snapshot.deletedOnsetIds).toEqual(["30"]);
+  });
+
+  it("bounds a restored clip to a known shorter audio duration", () => {
+    const restored = restoreWorkingState(chart, state, 2.8);
+    expect(restored.structure.clips).toMatchObject([{ id: "clip-a", endSec: 2.8 }]);
+  });
 });
 
 describe("sameBeats", () => {

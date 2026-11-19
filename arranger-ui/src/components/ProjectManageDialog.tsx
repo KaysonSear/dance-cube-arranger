@@ -4,12 +4,24 @@ import { useEffect, useState } from "react";
 
 import { currentPackageOf, srcQuery, type ProjectPackage } from "@/lib/projects";
 
+function initialFields(project: ProjectPackage | null) {
+  const source = project?.sourcePath ?? "";
+  const slash = Math.max(source.lastIndexOf("\\"), source.lastIndexOf("/"));
+  return {
+    displayName: project?.title ?? "",
+    sourceDir: slash >= 0 ? source.slice(0, slash + 1) : "",
+    sourceName: source.slice(slash + 1),
+    chartNames: Object.fromEntries((project?.charts ?? []).map((chart) =>
+      [chart.id ?? chart.src, chart.name ?? `${chart.title}.mc`])) as Record<string, string>,
+  };
+}
+
 export default function ProjectManageDialog(props: {
   open: boolean;
   src: string;
   onClose(): void;
   onChanged(): void;
-  onSave(): Promise<boolean>;
+  onSave(syncBacking: boolean): Promise<boolean>;
   onToast(message: string): void;
 }) {
   const [project, setProject] = useState<ProjectPackage | null>(null);
@@ -29,12 +41,11 @@ export default function ProjectManageDialog(props: {
       if (cancelled) return;
       const found = currentPackageOf((data.packages ?? []) as ProjectPackage[], props.src);
       setProject(found);
-      setDisplayName(found?.title ?? "");
-      const source = found?.sourcePath ?? "";
-      const slash = Math.max(source.lastIndexOf("\\"), source.lastIndexOf("/"));
-      setSourceDir(slash >= 0 ? source.slice(0, slash) : "");
-      setSourceName(slash >= 0 ? source.slice(slash + 1) : source);
-      setChartNames(Object.fromEntries((found?.charts ?? []).map((chart) => [chart.id ?? chart.src, chart.name ?? `${chart.title}.mc`])));
+      const initial = initialFields(found);
+      setDisplayName(initial.displayName);
+      setSourceDir(initial.sourceDir);
+      setSourceName(initial.sourceName);
+      setChartNames(initial.chartNames);
       setError(found?.managed ? null : "旧工程需从绝对路径重新打开后才能永久管理名称与位置。");
     })();
     return () => { cancelled = true; };
@@ -58,7 +69,15 @@ export default function ProjectManageDialog(props: {
     setBusy(true);
     setError(null);
     try {
-      if (!(await props.onSave())) {
+      const initial = initialFields(project);
+      const changedCharts = Object.fromEntries(Object.entries(chartNames)
+        .filter(([id, name]) => name !== initial.chartNames[id]));
+      const files = {
+        ...(Object.keys(changedCharts).length ? { chartNames: changedCharts } : {}),
+        ...(sourceDir !== initial.sourceDir ? { sourceDir } : {}),
+        ...(sourceName !== initial.sourceName ? { sourceName } : {}),
+      };
+      if (!(await props.onSave(Object.keys(files).length > 0))) {
         setError("保存未完成，未执行重命名或移动。请先处理保存冲突。");
         return;
       }
@@ -66,9 +85,8 @@ export default function ProjectManageDialog(props: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          displayName,
-          chartNames,
-          ...(project.sourceKind === "workspace" ? {} : { sourceDir, sourceName }),
+          ...(displayName !== initial.displayName ? { displayName } : {}),
+          ...files,
         }),
       });
       const data = await res.json();
@@ -93,7 +111,7 @@ export default function ProjectManageDialog(props: {
           <h2 className="font-serif text-base font-medium text-ink">管理名称与位置</h2>
           <button onClick={props.onClose} className="text-stone hover:text-ink">✕</button>
         </div>
-        <p className="mt-2 leading-relaxed text-stone">这是永久修改入口。提交前会先显式保存；失败不会修改注册表。</p>
+        <p className="mt-2 leading-relaxed text-stone">显示名保存在工程列表中。修改文件名或位置前会先同步原文件。</p>
         <label className="mt-4 block">工程显示名<input className="mt-1 w-full rounded-lg bg-white px-3 py-2 shadow-ring" value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>
         {project?.sourceKind !== "workspace" && <><label className="mt-3 block">包/源文件所在目录<div className="mt-1 flex gap-2"><input className="min-w-0 flex-1 rounded-lg bg-white px-3 py-2 font-mono shadow-ring" value={sourceDir} onChange={(event) => setSourceDir(event.target.value)} /><button onClick={() => void chooseFolder()} className="rounded-lg bg-sand px-3 shadow-ring">浏览…</button></div></label>
         <label className="mt-3 block">{project?.sourceKind === "mcz" ? "MCZ 包文件名" : "MC 文件名"}<input className="mt-1 w-full rounded-lg bg-white px-3 py-2 font-mono shadow-ring" value={sourceName} onChange={(event) => setSourceName(event.target.value)} /></label></>}

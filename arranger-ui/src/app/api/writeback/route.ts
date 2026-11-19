@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 
 import { findRepoRoot, resolveSrc, sha1Hex } from "@/lib/server/paths";
 import { readState, saveState } from "@/lib/server/store";
+import { commitWorkspaceCharts, readWorkspaceChart, WorkspaceConflict } from "@/lib/server/workspace-charts";
 import { validateArrangedMcText } from "@/lib/server/validate-mc";
 import { backupRelFor, isWritableRel } from "@/lib/writeback";
 
@@ -43,6 +44,18 @@ export async function POST(req: Request) {
   const v = validateArrangedMcText(mcText);
   if (!v.ok) return NextResponse.json({ ok: false, errors: v.errors }, { status: 422 });
 
+  if (sr.managed) {
+    try {
+      const chart = readWorkspaceChart(sr.abs, sr.rel, typeof expectSha1 === "string" ? expectSha1 : undefined);
+      commitWorkspaceCharts([{ ...chart, text: mcText }]);
+      return NextResponse.json({ ok: true, path: sr.rel, sha1: sha1Hex(mcText), backup: null,
+        backupCreated: false, noteCount: v.noteCount, warnings: v.warnings });
+    } catch (error) {
+      return NextResponse.json({ ok: false, error: (error as Error).message },
+        { status: error instanceof WorkspaceConflict ? 409 : 500 });
+    }
+  }
+
   const root = findRepoRoot();
   const diskSha1 = sha1Hex(fs.readFileSync(sr.abs));
   if (typeof expectSha1 === "string" && expectSha1 && expectSha1 !== diskSha1) {
@@ -53,7 +66,7 @@ export async function POST(req: Request) {
   }
 
   // 首次覆写前备份原件(.mc.orig 刻意不以 .mc 结尾,不会被当成包内的"影子谱")
-  const backupRel = sr.managed ? null : backupRelFor(sr.rel);
+  const backupRel = backupRelFor(sr.rel);
   const backupAbs = backupRel ? path.join(root, backupRel) : null;
   let backupCreated = false;
   if (backupAbs && !fs.existsSync(backupAbs)) {

@@ -154,7 +154,7 @@ def _load(path_or_dict: str | Path | dict[str, Any]) -> Any:
     if isinstance(path_or_dict, (str, Path)):
         path = Path(path_or_dict)
         try:
-            text = path.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8-sig")
         except OSError as exc:
             raise McParseError(f"cannot read .mc file {path}: {exc}") from exc
         try:

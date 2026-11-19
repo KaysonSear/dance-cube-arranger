@@ -1,3 +1,4 @@
+import { activeProjectWrites } from "@/lib/server/managed-projects";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -7,7 +8,7 @@ import { NextResponse } from "next/server";
 
 import { normalizeFileName, validateUniqueChartNames } from "@/lib/project-names";
 import { managedSrc } from "@/lib/projects";
-import { fingerprintFile, normalizeAbsolutePath } from "@/lib/server/managed-projects";
+import { fingerprintFile, isProtectedWda, nextManagedCopy, normalizeAbsolutePath } from "@/lib/server/managed-projects";
 import { discoverAssetsIn, findRepoRoot, resolvePythonCommand, resolveSrc } from "@/lib/server/paths";
 import { readRegistry, saveRegistry, writeJsonAtomic } from "@/lib/server/store";
 
@@ -87,122 +88,150 @@ export async function POST(req: Request) {
   try { body = await req.json(); }
   catch { return NextResponse.json({ ok: false, error: "请求 JSON 无效" }, { status: 400 }); }
 
-  const registry = readRegistry();
-  const project = registry.managedProjects.find((candidate) => candidate.id === sr.managed?.projectId);
-  if (!project) return NextResponse.json({ ok: false, error: "找不到工程" }, { status: 404 });
-  const displayName = typeof body.displayName === "string" ? body.displayName.trim() : project.displayName;
-  if (!displayName || /[\u0000-\u001f]/u.test(displayName)) {
-    return NextResponse.json({ ok: false, error: "工程显示名无效" }, { status: 400 });
-  }
-
-  const map = body.chartNames && typeof body.chartNames === "object"
-    ? body.chartNames as Record<string, unknown>
-    : {};
-  const sourceDirInput = body.sourceDir;
-  const sourceNameInput = body.sourceName;
-  const desired = project.charts.map((chart) => map[chart.id] ?? map[managedSrc(project.id, chart.id)] ?? chart.fileName);
-  const checkedCharts = validateUniqueChartNames(desired);
-  if (!checkedCharts.ok) return NextResponse.json({ ok: false, error: checkedCharts.error }, { status: 400 });
-  if (project.sourceKind === "mc" && project.charts.length === 1) {
-    const synchronized = normalizeFileName(sourceNameInput ?? checkedCharts.names[0], ".mc");
-    if (!synchronized.ok) return NextResponse.json({ ok: false, error: synchronized.error }, { status: 400 });
-    checkedCharts.names[0] = synchronized.name;
-  }
-
-  let newSource = project.sourcePath;
-  const requestedSourceName = sourceNameInput ?? (
-    project.sourceKind === "mc" && checkedCharts.names[0] !== project.charts[0]?.fileName
-      ? checkedCharts.names[0]
-      : null
-  );
-  if (sourceDirInput != null || requestedSourceName != null) {
-    if (!project.sourcePath || project.sourceKind === "workspace") {
-      return NextResponse.json({ ok: false, error: "该工程没有可移动的外部原文件" }, { status: 409 });
-    }
-    const dirResult = normalizeAbsolutePath(sourceDirInput ?? path.dirname(project.sourcePath));
-    if (!dirResult.ok) return NextResponse.json({ ok: false, error: dirResult.error }, { status: 400 });
-    if (!fs.existsSync(dirResult.path) || !fs.statSync(dirResult.path).isDirectory()) {
-      return NextResponse.json({ ok: false, error: `目标目录不存在: ${dirResult.path}` }, { status: 422 });
-    }
-    const ext = project.sourceKind === "mcz" ? ".mcz" : ".mc";
-    const nameResult = normalizeFileName(requestedSourceName ?? path.basename(project.sourcePath), ext);
-    if (!nameResult.ok) return NextResponse.json({ ok: false, error: nameResult.error }, { status: 400 });
-    newSource = path.join(dirResult.path, nameResult.name);
-    if (path.resolve(newSource).toLocaleLowerCase("en-US") !== path.resolve(project.sourcePath).toLocaleLowerCase("en-US") && fs.existsSync(newSource)) {
-      return NextResponse.json({ ok: false, conflict: true, error: `目标已存在: ${newSource}` }, { status: 409 });
-    }
-  }
-
-  const workspace = path.join(findRepoRoot(), project.workspaceRel);
-  const renamePairs = project.charts
-    .map((chart, index) => ({ chart, from: chart.fileName, to: checkedCharts.names[index] }))
-    .filter((pair) => pair.from !== pair.to);
-  const staged: { temp: string; target: string; original: string }[] = [];
-  const movedAssets: { from: string; to: string; keptSource: boolean }[] = [];
-  let sourceMoved = false;
+  const id = sr.managed.projectId;
+  if (activeProjectWrites.has(id)) return NextResponse.json({ ok: false, error: "工程正在保存，请稍后重试" }, { status: 409 });
+  activeProjectWrites.add(id);
   try {
-    if (newSource && project.sourcePath && path.resolve(newSource).toLocaleLowerCase("en-US") !== path.resolve(project.sourcePath).toLocaleLowerCase("en-US")) {
-      if (!project.copyOnWrite) {
-        const actual = fingerprintFile(project.sourcePath);
-        if (project.sourceFingerprint && actual !== project.sourceFingerprint) {
-          return NextResponse.json({ ok: false, conflict: true, error: "原文件已被其他程序修改" }, { status: 409 });
-        }
-      }
-      if (project.sourceKind === "mc") {
-        const assetMoves = Object.values(project.sourceAssets ?? {}).flatMap((record) => {
-          if (!record) return [];
-          const from = path.join(path.dirname(project.sourcePath!), record.fileName);
-          const to = path.join(path.dirname(newSource!), record.fileName);
-          return fs.existsSync(from) && path.resolve(from).toLocaleLowerCase("en-US") !== path.resolve(to).toLocaleLowerCase("en-US")
-            ? [{ from, to }]
-            : [];
-        });
-        const conflict = assetMoves.find(({ from, to }) => fs.existsSync(to) && fingerprintFile(to) !== fingerprintFile(from));
-        if (conflict) {
-          return NextResponse.json({ ok: false, conflict: true, error: `目标素材已存在: ${conflict.to}` }, { status: 409 });
-        }
-        for (const { from, to } of assetMoves) {
-          if (fs.existsSync(to)) continue;
-          relocateFile(from, to, project.copyOnWrite);
-          movedAssets.push({ from, to, keptSource: project.copyOnWrite });
-        }
-      }
-      relocateFile(project.sourcePath, newSource, project.copyOnWrite);
-      sourceMoved = true;
+    const registry = readRegistry();
+    const project = registry.managedProjects.find((candidate) => candidate.id === sr.managed?.projectId);
+    if (!project) return NextResponse.json({ ok: false, error: "找不到工程" }, { status: 404 });
+    const displayName = typeof body.displayName === "string" ? body.displayName.trim() : project.displayName;
+    if (!displayName || /[\u0000-\u001f]/u.test(displayName)) {
+      return NextResponse.json({ ok: false, error: "工程显示名无效" }, { status: 400 });
     }
-    for (const [index, pair] of renamePairs.entries()) {
-      const original = path.join(workspace, pair.from);
-      const temp = path.join(workspace, `.rename-${process.pid}-${index}.tmp`);
-      fs.renameSync(original, temp);
-      staged.push({ temp, target: path.join(workspace, pair.to), original });
-    }
-    for (const item of staged) fs.renameSync(item.temp, item.target);
-    if (project.sourceKind === "mcz" && newSource) {
-      await repackageWorkspace(workspace, checkedCharts.names, newSource);
-    }
-  } catch (error) {
-    for (const item of [...staged].reverse()) {
-      const current = fs.existsSync(item.target) ? item.target : item.temp;
-      if (fs.existsSync(current) && !fs.existsSync(item.original)) fs.renameSync(current, item.original);
-    }
-    for (const asset of [...movedAssets].reverse()) {
-      try {
-        if (asset.keptSource) fs.rmSync(asset.to, { force: true });
-        else if (fs.existsSync(asset.to) && !fs.existsSync(asset.from)) relocateFile(asset.to, asset.from, false);
-      } catch { /* retain recoverable copy for manual recovery */ }
-    }
-    if (sourceMoved && newSource && project.sourcePath && !project.copyOnWrite && fs.existsSync(newSource) && !fs.existsSync(project.sourcePath)) {
-      try { relocateFile(newSource, project.sourcePath, false); } catch { /* retain both paths for manual recovery */ }
-    }
-    return NextResponse.json({ ok: false, error: `管理操作已回滚: ${(error as Error).message}` }, { status: 422 });
-  }
 
-  renamePairs.forEach((pair) => { pair.chart.fileName = pair.to; pair.chart.title = pair.to.replace(/\.mc$/i, ""); });
-  project.displayName = displayName;
-  if (newSource) project.sourcePath = newSource;
-  if (sourceMoved || project.copyOnWrite) project.copyOnWrite = false;
-  if (project.sourcePath && fs.existsSync(project.sourcePath)) project.sourceFingerprint = fingerprintFile(project.sourcePath);
-  project.updatedAt = new Date().toISOString();
-  saveRegistry(registry);
-  return NextResponse.json({ ok: true, src: sr.rel, projectId: project.id });
+    const map = body.chartNames && typeof body.chartNames === "object"
+      ? body.chartNames as Record<string, unknown>
+      : {};
+    const sourceDirInput = project.sourcePath && typeof body.sourceDir === "string" &&
+      path.resolve(body.sourceDir) === path.dirname(project.sourcePath) ? undefined : body.sourceDir;
+    const sourceNameInput = project.sourcePath && body.sourceName === path.basename(project.sourcePath)
+      ? undefined : body.sourceName;
+    const desired = project.charts.map((chart) => map[chart.id] ?? map[managedSrc(project.id, chart.id)] ?? chart.fileName);
+    if (sourceDirInput == null && sourceNameInput == null &&
+        desired.every((name, i) => name === project.charts[i].fileName)) {
+      if (displayName !== project.displayName) {
+        project.displayName = displayName;
+        project.updatedAt = new Date().toISOString();
+        saveRegistry(registry);
+      }
+      return NextResponse.json({ ok: true, src: sr.rel, projectId: project.id });
+    }
+    const checkedCharts = validateUniqueChartNames(desired);
+    if (!checkedCharts.ok) return NextResponse.json({ ok: false, error: checkedCharts.error }, { status: 400 });
+    if (project.sourceKind === "mc" && project.charts.length === 1) {
+      const synchronized = normalizeFileName(sourceNameInput ?? checkedCharts.names[0], ".mc");
+      if (!synchronized.ok) return NextResponse.json({ ok: false, error: synchronized.error }, { status: 400 });
+      checkedCharts.names[0] = synchronized.name;
+    }
+
+    let newSource = project.sourcePath;
+    const requestedSourceName = sourceNameInput ?? (
+      project.sourceKind === "mc" && checkedCharts.names[0] !== project.charts[0]?.fileName
+        ? checkedCharts.names[0]
+        : null
+    );
+    if (sourceDirInput != null || requestedSourceName != null) {
+      if (!project.sourcePath || project.sourceKind === "workspace") {
+        return NextResponse.json({ ok: false, error: "该工程没有可移动的外部原文件" }, { status: 409 });
+      }
+      const dirResult = normalizeAbsolutePath(sourceDirInput ?? path.dirname(project.sourcePath));
+      if (!dirResult.ok) return NextResponse.json({ ok: false, error: dirResult.error }, { status: 400 });
+      if (!fs.existsSync(dirResult.path) || !fs.statSync(dirResult.path).isDirectory()) {
+        return NextResponse.json({ ok: false, error: `目标目录不存在: ${dirResult.path}` }, { status: 422 });
+      }
+      const ext = project.sourceKind === "mcz" ? ".mcz" : ".mc";
+      const nameResult = normalizeFileName(requestedSourceName ?? path.basename(project.sourcePath), ext);
+      if (!nameResult.ok) return NextResponse.json({ ok: false, error: nameResult.error }, { status: 400 });
+      newSource = path.join(dirResult.path, nameResult.name);
+      if (path.resolve(newSource).toLocaleLowerCase("en-US") !== path.resolve(project.sourcePath).toLocaleLowerCase("en-US") && fs.existsSync(newSource)) {
+        return NextResponse.json({ ok: false, conflict: true, error: `目标已存在: ${newSource}` }, { status: 409 });
+      }
+    }
+
+    const workspace = path.join(findRepoRoot(), project.workspaceRel);
+    const renamePairs = project.charts
+      .map((chart, index) => ({ chart, from: chart.fileName, to: checkedCharts.names[index] }))
+      .filter((pair) => pair.from !== pair.to);
+    const keepSource = project.copyOnWrite || Boolean(project.sourcePath && isProtectedWda(project.sourcePath));
+    if (project.sourcePath && (!fs.existsSync(project.sourcePath) ||
+        (project.sourceFingerprint && fingerprintFile(project.sourcePath) !== project.sourceFingerprint))) {
+      return NextResponse.json({ ok: false, conflict: true, error: "原文件已移动或被其他程序修改" }, { status: 409 });
+    }
+    if (keepSource && project.sourceKind === "mcz" && renamePairs.length && newSource === project.sourcePath && newSource) {
+      newSource = nextManagedCopy(path.basename(newSource));
+    }
+    const staged: { temp: string; target: string; original: string; published: boolean }[] = [];
+    const movedAssets: { from: string; to: string; keptSource: boolean }[] = [];
+    let sourceMoved = false;
+    try {
+      if (newSource && project.sourcePath && path.resolve(newSource).toLocaleLowerCase("en-US") !== path.resolve(project.sourcePath).toLocaleLowerCase("en-US")) {
+        if (project.sourceKind === "mc") {
+          const assetMoves = Object.values(project.sourceAssets ?? {}).flatMap((record) => {
+            if (!record) return [];
+            const from = path.join(path.dirname(project.sourcePath!), record.fileName);
+            const to = path.join(path.dirname(newSource!), record.fileName);
+            return fs.existsSync(from) && path.resolve(from).toLocaleLowerCase("en-US") !== path.resolve(to).toLocaleLowerCase("en-US")
+              ? [{ from, to }]
+              : [];
+          });
+          const conflict = assetMoves.find(({ from, to }) => fs.existsSync(to) && fingerprintFile(to) !== fingerprintFile(from));
+          if (conflict) {
+            return NextResponse.json({ ok: false, conflict: true, error: `目标素材已存在: ${conflict.to}` }, { status: 409 });
+          }
+          for (const { from, to } of assetMoves) {
+            if (fs.existsSync(to)) continue;
+            relocateFile(from, to, keepSource);
+            movedAssets.push({ from, to, keptSource: keepSource });
+          }
+        }
+        relocateFile(project.sourcePath, newSource, keepSource);
+        sourceMoved = true;
+      }
+      for (const [index, pair] of renamePairs.entries()) {
+        const original = path.join(workspace, pair.from);
+        const temp = path.join(workspace, `.rename-${process.pid}-${index}.tmp`);
+        fs.renameSync(original, temp);
+        staged.push({ temp, target: path.join(workspace, pair.to), original, published: false });
+      }
+      for (const item of staged) {
+        if (fs.existsSync(item.target)) throw new Error(`目标已存在: ${item.target}`);
+        fs.renameSync(item.temp, item.target);
+        item.published = true;
+      }
+      if (project.sourceKind === "mcz" && newSource && renamePairs.length) {
+        await repackageWorkspace(workspace, checkedCharts.names, newSource);
+      }
+    } catch (error) {
+      for (const item of staged) if (item.published) fs.renameSync(item.target, item.temp);
+      for (const item of staged) fs.renameSync(item.temp, item.original);
+      for (const asset of [...movedAssets].reverse()) {
+        try {
+          if (asset.keptSource) fs.rmSync(asset.to, { force: true });
+          else if (fs.existsSync(asset.to) && !fs.existsSync(asset.from)) relocateFile(asset.to, asset.from, false);
+        } catch { /* retain recoverable copy for manual recovery */ }
+      }
+      if (sourceMoved && newSource && project.sourcePath) {
+        if (keepSource) fs.rmSync(newSource, { force: true });
+        else if (!fs.existsSync(project.sourcePath)) {
+          try { relocateFile(newSource, project.sourcePath, false); } catch { /* retain both paths for manual recovery */ }
+        }
+      }
+      return NextResponse.json({ ok: false, error: `管理操作已回滚: ${(error as Error).message}` }, { status: 422 });
+    }
+
+    renamePairs.forEach((pair) => { pair.chart.fileName = pair.to; pair.chart.title = pair.to.replace(/\.mc$/i, ""); });
+    if (project.sourceKind === "mcz" && renamePairs.length) for (const chart of project.charts) delete chart.archiveEntry;
+    project.displayName = displayName;
+    if (newSource) project.sourcePath = newSource;
+    if (sourceMoved && newSource) project.copyOnWrite = isProtectedWda(newSource);
+    if (project.sourcePath && fs.existsSync(project.sourcePath)) project.sourceFingerprint = fingerprintFile(project.sourcePath);
+    project.updatedAt = new Date().toISOString();
+    const latest = readRegistry();
+    latest.managedProjects = latest.managedProjects.map((p) => p.id === id ? project : p);
+    saveRegistry(latest);
+    return NextResponse.json({ ok: true, src: sr.rel, projectId: project.id });
+  } finally {
+    activeProjectWrites.delete(id);
+  }
 }

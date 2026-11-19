@@ -164,7 +164,7 @@ export class AudioEngine {
   private subs = new Set<(t: number) => void>();
   private raf = 0;
   private disposed = false;
-  private readonly requests = new AbortController();
+  private readonly loadController = new AbortController();
 
   constructor(private cb: EngineCallbacks) {}
 
@@ -217,6 +217,8 @@ export class AudioEngine {
 
   async load(audioUrl: string, kickUrl: string): Promise<void> {
     if (this.disposed) throw new Error("引擎已释放,不能重复 load(应新建实例)");
+    // The editor's canvases and playhead also run for charts without audio.
+    this.startFrameLoop();
     this.ctx = new (window.AudioContext ||
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     this.musicGain = this.ctx.createGain();
@@ -227,20 +229,23 @@ export class AudioEngine {
     this.kickGain.gain.value = this.kickVol;
 
     await this.ensureWorklet();
-    this.requests.signal.throwIfAborted();
-    if (!this.workletReady) await this.loadFallbackShifter();
-    const response = await fetch(audioUrl, { signal: AbortSignal.any([this.requests.signal, AbortSignal.timeout(30_000)]) });
-    if (!response.ok) throw new Error(`音频请求失败 (HTTP ${response.status})`);
-    const decoded = await this.ctx.decodeAudioData(await response.arrayBuffer());
-    this.requests.signal.throwIfAborted();
+    if (this.disposed) return;
+    if (!this.workletReady) await this.loadFallbackShifter(); // worklet 失败 → 备好真回退
+    if (this.disposed) return;
+    const response = await fetch(audioUrl, { signal: this.loadController.signal });
+    if (!response.ok) throw new Error(`音频加载失败 (HTTP ${response.status})`);
+    const arr = await response.arrayBuffer();
+    if (this.disposed) return;
+    const decoded = await this.ctx.decodeAudioData(arr);
+    if (this.disposed) return;
     this.buffer = this.ensureStereo(decoded);
     this._duration = this.buffer.duration;
+    this._position = Math.min(this._position, this._duration);
     this.buildShifter();
     void this.loadKick(kickUrl);
 
     this._ready = true;
     this.cb.onReady();
-    this.startFrameLoop();
   }
 
   private ensureStereo(buf: AudioBuffer): AudioBuffer {
@@ -260,7 +265,7 @@ export class AudioEngine {
     } catch (err) {
       // 常见成因:引擎被 dispose 导致 ctx.close() 打断在途 addModule(AbortError)。
       // 真·回退在 buildShifter 里(动态载入 vendored ScriptProcessor 版 PitchShifter)。
-      console.warn("AudioWorklet 加载失败,将回退 ScriptProcessor(慢放可能抽帧):", err);
+      if (!this.disposed) console.warn("AudioWorklet 加载失败,将回退 ScriptProcessor(慢放可能抽帧):", err);
     }
   }
 
@@ -372,16 +377,11 @@ export class AudioEngine {
   }
 
   private startShuttle(sec: number, auditionAtEnd: boolean, withKick = false): void {
-    const target = clamp(sec, 0, this._duration || 0);
     if (!this.shifter || !this.ctx || !this._duration) {
-      if (auditionAtEnd) {
-        if (this._playing) this.pause();
-        this.audition(target, 0.12, 0.15, withKick);
-      } else {
-        this.seek(target);
-      }
+      this.seek(sec);
       return;
     }
+    const target = clamp(sec, 0, this._duration);
     if (Math.abs(target - this._position) <= 1e-6) {
       this.cancelShuttle(true);
       if (this._playing) this.pause();
@@ -426,7 +426,7 @@ export class AudioEngine {
       this.auditionWithKick = false;
       this.pause();
     }
-    const t = clamp(sec, 0, this._duration || 0);
+    const t = clamp(sec, 0, this._duration || Infinity);
     this._position = t;
     this.applySeek(t);
     if (this._playing) {
@@ -560,11 +560,14 @@ export class AudioEngine {
   private async loadKick(url: string): Promise<void> {
     if (!this.ctx) return;
     try {
-      const arr = await (await fetch(url, { signal: this.requests.signal })).arrayBuffer();
-      this.kickBuffer = await this.ctx.decodeAudioData(arr);
+      const arr = await (await fetch(url, { signal: this.loadController.signal })).arrayBuffer();
+      if (this.disposed) return;
+      const sample = await this.ctx.decodeAudioData(arr);
+      if (this.disposed) return;
+      this.kickBuffer = sample;
       this.kickSampleOnset = this.computeSampleOnset(this.kickBuffer);
     } catch (err) {
-      console.warn("kick 采样加载失败:", err);
+      if (!this.disposed) console.warn("kick 采样加载失败:", err);
     }
   }
 
@@ -864,7 +867,7 @@ export class AudioEngine {
   dispose(): void {
     if (this.disposed) return; // 幂等
     this.disposed = true;
-    this.requests.abort();
+    this.loadController.abort();
     this.shuttle = null;
     this.resumeAfterShuttle = false;
     this.auditionAfterShuttle = false;

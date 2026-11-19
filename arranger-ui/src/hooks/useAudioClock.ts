@@ -51,6 +51,8 @@ export function useAudioClock(audioUrl: string): AudioClock {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const engineRef = useRef<AudioEngine | null>(null);
+  const positionRef = useRef(0);
+  const subscribers = useRef(new Set<(time: number) => void>());
 
   useEffect(() => {
     // 每次 effect 运行都新建引擎:引擎是**一次性**的(dispose 后不可复用)。
@@ -62,9 +64,12 @@ export function useAudioClock(audioUrl: string): AudioClock {
       onReady: () => setReady(true),
     });
     engineRef.current = engine;
+    engine.seek(positionRef.current);
+    engine.subscribe((time) => subscribers.current.forEach((cb) => cb(time)));
     // This effect owns an external audio engine; a new URL resets its observable status.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(false);
+    setPlaying(false);
     setError(null);
     engine.load(audioUrl, KICK_URL).catch((e: unknown) => {
       if (engineRef.current === engine) setError((e as Error)?.message ?? "音频引擎初始化失败");
@@ -84,6 +89,7 @@ export function useAudioClock(audioUrl: string): AudioClock {
     return () => {
       delete w.__kickDiag;
       delete w.__kickLeakTest;
+      positionRef.current = engine.getTime();
       engine.dispose();
       if (engineRef.current === engine) engineRef.current = null;
     };
@@ -113,7 +119,11 @@ export function useAudioClock(audioUrl: string): AudioClock {
       setKickSound: (id) => e()?.setKickSound(id),
       previewKick: () => e()?.previewKick(),
       setKickOnsets: (times) => e()?.setKickOnsets(times),
-      subscribe: (cb) => e()?.subscribe(cb) ?? (() => {}),
+      subscribe: (cb) => {
+        const listeners = subscribers.current;
+        listeners.add(cb);
+        return () => { listeners.delete(cb); };
+      },
     };
   }, [playing, ready, error]);
 }

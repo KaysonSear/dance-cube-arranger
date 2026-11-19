@@ -2,7 +2,9 @@
  * 舞立方谱面编辑器版本与更新配置。
  */
 
-export const APP_VERSION = "261117";
+import packageMetadata from "../../package.json";
+
+export const APP_VERSION = packageMetadata.version;
 
 /** 默认 GitHub 仓库 (owner/repo)，若开源后地址变动可通过环境变量 ARRANGER_GITHUB_REPO 覆盖 */
 export const DEFAULT_GITHUB_REPO = "KaysonSear/dance-cube-arranger";

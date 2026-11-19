@@ -99,10 +99,10 @@ export function writeImport(opts: { slugBase: string; files: ImportFile[] }): { 
   const importsAbs = path.join(root, IMPORTS_REL);
   fs.mkdirSync(importsAbs, { recursive: true });
   const slug = uniqueSlug(opts.slugBase, (s) => fs.existsSync(path.join(importsAbs, s)));
-  const dirAbs = path.join(importsAbs, slug);
+  const dirAbs = path.join(/*turbopackIgnore: true*/ importsAbs, slug);
   fs.mkdirSync(dirAbs);
   for (const f of opts.files) {
-    fs.writeFileSync(path.join(dirAbs, f.name), f.data);
+    fs.writeFileSync(path.join(/*turbopackIgnore: true*/ dirAbs, f.name), f.data);
   }
   return { dirRel: `artifacts/arranger/imports/${slug}` };
 }

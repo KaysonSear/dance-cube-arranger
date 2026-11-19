@@ -21,6 +21,7 @@ export interface ProjectAsset {
 export type ManagedSourceKind = "mc" | "mcz" | "workspace";
 
 export interface ManagedChartRecord {
+  archiveEntry?: string | null;
   legacySources?: string[];
   /** Stable opaque id; filenames may change without invalidating navigation/history. */
   id: string;
@@ -58,6 +59,8 @@ export interface ProjectRegistryV3 {
   hiddenCharts: string[];
   lastOpenedSrc: string | null;
   lastExportDir: string | null;
+  purgedImportDirs?: string[];
+  purgedExamples?: string[];
   managedProjects: ManagedProjectRecord[];
   updatedAt: string;
 }
@@ -84,6 +87,8 @@ export function migrateProjectRegistry(raw: unknown): ProjectRegistryV3 {
       hiddenCharts: strings(value.hiddenCharts),
       lastOpenedSrc: typeof value.lastOpenedSrc === "string" ? value.lastOpenedSrc : null,
       lastExportDir: typeof value.lastExportDir === "string" ? value.lastExportDir : null,
+      ...(strings(value.purgedImportDirs).length ? { purgedImportDirs: strings(value.purgedImportDirs) } : {}),
+      ...(strings(value.purgedExamples).length ? { purgedExamples: strings(value.purgedExamples) } : {}),
       managedProjects,
       updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
     };

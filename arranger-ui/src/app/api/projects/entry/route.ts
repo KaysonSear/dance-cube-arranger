@@ -7,23 +7,19 @@ import { addHidden, dirOf, parseManagedSrc, removeHidden } from "@/lib/projects"
 import {
   findRepoRoot,
   normalizeSrcRel,
-  projectKey,
 } from "@/lib/server/paths";
-import {
-  listProjectCharts,
-  purgeChartFiles,
-  purgeProjectFiles,
-  resolveImportProject,
-} from "@/lib/server/project-files";
-import { projectDir, readRegistry, saveRegistry } from "@/lib/server/store";
+import { isLocalRequest } from "@/lib/server/local-request";
+import { purgeEntry } from "@/lib/server/project-purge";
+import { readRegistry, saveRegistry } from "@/lib/server/store";
 
 export const dynamic = "force-dynamic";
 
 /**
- * 工程/谱面条目管理。普通删除只更新注册表；物理删除只允许 imports/<slug>/。
+ * 工程/谱面条目管理。普通删除只更新注册表；物理删除使用服务端生成的确认清单。
  */
 export async function POST(req: Request) {
-  let body: { scope?: unknown; target?: unknown; action?: unknown };
+  if (!isLocalRequest(req)) return NextResponse.json({ ok: false, error: "仅支持本地请求" }, { status: 403 });
+  let body: { scope?: unknown; target?: unknown; action?: unknown; token?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -67,7 +63,7 @@ export async function POST(req: Request) {
     const managed = parseManagedSrc(chartRel);
     const exists = managed
       ? registry.managedProjects.some((p) => p.id === managed.projectId && p.charts.some((c) => c.id === managed.chartId))
-      : fs.existsSync(path.join(findRepoRoot(), chartRel));
+      : fs.existsSync(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ findRepoRoot(), chartRel));
     if (!exists) return NextResponse.json({ ok: false, error: "谱面不存在" }, { status: 404 });
     const saved = saveRegistry({ ...registry, lastOpenedSrc: chartRel });
     return NextResponse.json({ ok: true, lastOpenedSrc: saved.lastOpenedSrc });
@@ -77,55 +73,26 @@ export async function POST(req: Request) {
     const key = chartRel ?? projectRel;
     const current = scope === "chart" ? registry.hiddenCharts : registry.hiddenProjects;
     const next = action === "hide" ? addHidden(current, key) : removeHidden(current, key);
+    const last = registry.lastOpenedSrc;
+    const lastProject = last && (parseManagedSrc(last)?.projectId ?? dirOf(last));
+    const clearLast = action === "hide" && (chartRel ? chartRel === last : projectRel === lastProject);
     const saved = saveRegistry({
-      ...registry,
+      ...registry, lastOpenedSrc: clearLast ? null : last,
       ...(scope === "chart" ? { hiddenCharts: next } : { hiddenProjects: next }),
     });
     return NextResponse.json({ ok: true, registry: saved });
   }
 
-  if (action !== "purge") {
+  if (action !== "purge" && action !== "preview-purge") {
     return NextResponse.json({ ok: false, error: "未知 action" }, { status: 400 });
   }
-
-  if (parseManagedSrc(chartRel ?? "") || registry.managedProjects.some((p) => p.id === projectRel)) {
-    return NextResponse.json({ ok: false, error: "受管工程只能从历史隐藏；不会删除外部原文件" }, { status: 403 });
+  if (action === "purge" && typeof body.token !== "string") {
+    return NextResponse.json({ ok: false, error: "请先确认删除清单" }, { status: 409 });
   }
-
-  const root = findRepoRoot();
-  const projectAbs = resolveImportProject(root, projectRel);
-  if (!projectAbs) {
-    return NextResponse.json(
-      { ok: false, error: "内置或非导入工程只能从历史删除，不能彻底删除" },
-      { status: 403 },
-    );
+  try {
+    const plan = purgeEntry(registry, projectRel, chartRel, action === "purge" ? String(body.token) : undefined);
+    return NextResponse.json({ ok: true, ...plan });
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 409 });
   }
-  if (!fs.existsSync(projectAbs) || !fs.statSync(projectAbs).isDirectory()) {
-    return NextResponse.json({ ok: false, error: "工程不存在" }, { status: 404 });
-  }
-
-  let deleted: string[] = [];
-  const chartSrcs = listProjectCharts(root, projectRel);
-
-  if (scope === "project") {
-    for (const src of chartSrcs) {
-      fs.rmSync(projectDir(projectKey(src)), { recursive: true, force: true });
-    }
-    deleted = purgeProjectFiles(root, projectRel);
-  } else if (chartRel) {
-    const result = purgeChartFiles(root, chartRel);
-    deleted = result.deleted;
-    fs.rmSync(projectDir(projectKey(chartRel)), { recursive: true, force: true });
-  }
-
-  const removedSrcs = scope === "project" ? chartSrcs : chartRel ? [chartRel] : [];
-  const saved = saveRegistry({
-    ...registry,
-    hiddenProjects: removeHidden(registry.hiddenProjects, projectRel),
-    hiddenCharts: registry.hiddenCharts.filter((src) => !removedSrcs.includes(src)),
-    lastOpenedSrc: removedSrcs.includes(registry.lastOpenedSrc ?? "")
-      ? null
-      : registry.lastOpenedSrc,
-  });
-  return NextResponse.json({ ok: true, deleted, registry: saved });
 }

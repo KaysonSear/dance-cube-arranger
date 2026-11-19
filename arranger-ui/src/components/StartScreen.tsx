@@ -4,6 +4,7 @@
  * 启动页:V3 受管工程列表 + 原生/手输绝对路径打开 + 兼容性的复制导入。
  */
 
+import { changeProjectEntry } from "@/lib/project-entry";
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 
 import BlankChartDialog from "@/components/BlankChartDialog";
@@ -154,26 +155,15 @@ export default function StartScreen({ onOpen, resumeIssue }: StartScreenProps) {
     scope: "project" | "chart",
     target: string,
     action: "hide" | "unhide" | "purge",
-    paths: string[],
   ) => {
     const label = scope === "project" ? "工程" : "谱面";
-    const message = action === "purge"
-      ? `彻底删除${label}？此操作不可恢复。\n\n${paths.join("\n")}`
-      : action === "hide"
-        ? `从工程历史删除此${label}？真实文件、编辑状态和快照都会保留。`
-        : null;
-    if (message && !window.confirm(message)) return;
+    if (action === "hide" && !window.confirm(`从工程历史删除此${label}？真实文件、编辑状态和快照都会保留。`)) return;
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/projects/entry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope, target, action }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) setError(String(data.error ?? "工程操作失败"));
-      else await refreshProjects();
+      if (await changeProjectEntry(scope, target, action)) await refreshProjects();
+    } catch (cause) {
+      setError((cause as Error).message);
     } finally {
       setBusy(false);
     }
@@ -191,11 +181,6 @@ export default function StartScreen({ onOpen, resumeIssue }: StartScreenProps) {
       cover: project.cover ?? null,
     });
     const visibleCharts = deleted ? project.charts : project.charts.filter((chart) => !chart.hidden);
-    const projectPaths = [
-      ...chartAssets.map((asset) => asset.path),
-      project.audio?.path,
-      project.cover?.path,
-    ].filter((path): path is string => !!path);
     return (
       <article key={project.dir} className="group/project rounded-xl bg-ivory p-4 shadow-ring">
         <div className="flex items-start gap-3">
@@ -224,13 +209,13 @@ export default function StartScreen({ onOpen, resumeIssue }: StartScreenProps) {
           </div>
           {(!deleted || project.hidden) && <div className="flex shrink-0 gap-2 text-[11px]">
             {project.hidden ? (
-              <button className="text-clay hover:text-coral" onClick={() => void manageEntry("project", project.dir, "unhide", [])}>恢复工程</button>
+              <button className="text-clay hover:text-coral" onClick={() => void manageEntry("project", project.dir, "unhide")}>恢复工程</button>
             ) : (
               <button
                 aria-label="从历史移除工程"
                 title="从历史移除工程（保留文件，可恢复）"
                 className="pointer-events-none inline-flex h-7 w-7 items-center justify-center rounded-lg text-lg leading-none text-stone opacity-0 transition-opacity hover:bg-cream hover:text-ink focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover/project:pointer-events-auto group-hover/project:opacity-100"
-                onClick={() => void manageEntry("project", project.dir, "hide", projectPaths)}
+                onClick={() => void manageEntry("project", project.dir, "hide")}
               >×</button>
             )}
             <button
@@ -238,7 +223,7 @@ export default function StartScreen({ onOpen, resumeIssue }: StartScreenProps) {
               disabled={busy || !project.canPurge}
               title={project.canPurge ? "删除工程全部真实文件" : "内置或非导入工程不可彻底删除"}
               className="pointer-events-none inline-flex h-7 w-7 items-center justify-center rounded-lg border border-err/30 text-lg font-semibold leading-none text-err opacity-0 transition-opacity hover:bg-err-wash focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover/project:pointer-events-auto group-hover/project:opacity-100 disabled:cursor-not-allowed disabled:opacity-30"
-              onClick={() => void manageEntry("project", project.dir, "purge", projectPaths)}
+              onClick={() => void manageEntry("project", project.dir, "purge")}
             >×</button>
           </div>}
         </div>
@@ -256,13 +241,13 @@ export default function StartScreen({ onOpen, resumeIssue }: StartScreenProps) {
               </button>
               {chart.assignedCount !== null && <span className="text-[10px] text-stone">已排 {chart.assignedCount}</span>}
               {!project.hidden && (chart.hidden ? (
-                <button className="text-[10px] text-clay" onClick={() => void manageEntry("chart", chart.src, "unhide", [])}>恢复</button>
+                <button className="text-[10px] text-clay" onClick={() => void manageEntry("chart", chart.src, "unhide")}>恢复</button>
               ) : (
                 <button
                   aria-label={`从历史移除谱面 ${chart.title}`}
                   title="从历史移除谱面（保留文件，可恢复）"
                   className="pointer-events-none inline-flex h-6 w-6 items-center justify-center rounded-lg text-base leading-none text-stone opacity-0 transition-opacity hover:bg-cream hover:text-ink focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover/chart:pointer-events-auto group-hover/chart:opacity-100"
-                  onClick={() => void manageEntry("chart", chart.src, "hide", [chart.src])}
+                  onClick={() => void manageEntry("chart", chart.src, "hide")}
                 >×</button>
               ))}
               {!project.hidden && <button
@@ -270,7 +255,7 @@ export default function StartScreen({ onOpen, resumeIssue }: StartScreenProps) {
                 disabled={busy || !project.canPurge}
                 title={project.canPurge ? "删除谱面真实文件（不可恢复）" : "内置或非导入工程不可彻底删除"}
                 className="pointer-events-none inline-flex h-6 w-6 items-center justify-center rounded-lg border border-err/30 text-base font-semibold leading-none text-err opacity-0 transition-opacity hover:bg-err-wash focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover/chart:pointer-events-auto group-hover/chart:opacity-100 disabled:cursor-not-allowed disabled:opacity-30"
-                onClick={() => void manageEntry("chart", chart.src, "purge", [chart.src])}
+                onClick={() => void manageEntry("chart", chart.src, "purge")}
               >×</button>}
             </div>
           ))}
